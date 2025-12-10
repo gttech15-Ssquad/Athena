@@ -21,13 +21,14 @@ namespace virtupay_corporate.DTOs
         [MinLength(8, ErrorMessage = "Password must be at least 8 characters")]
      public required string Password { get; set; }
 
-   /// <summary>
-  /// Gets or sets the user role.
-        /// </summary>
-    [Required(ErrorMessage = "Role is required")]
+ /// <summary>
+   /// Gets or sets the user role (APP = Approver, VIEW = Viewer).
+     /// </summary>
+ [Required(ErrorMessage = "Role is required")]
+   [RegularExpression("^(APP|VIEW)$", ErrorMessage = "Role must be either 'APP' (Approver) or 'VIEW' (Viewer)")]
         public required string Role { get; set; }
 
-      /// <summary>
+   /// <summary>
         /// Gets or sets the first name.
         /// </summary>
      public string? FirstName { get; set; }
@@ -36,11 +37,6 @@ namespace virtupay_corporate.DTOs
         /// Gets or sets the last name.
     /// </summary>
         public string? LastName { get; set; }
-
-      /// <summary>
-/// Gets or sets the department ID.
- /// </summary>
-    public int? DepartmentId { get; set; }
     }
 
     /// <summary>
@@ -90,12 +86,17 @@ namespace virtupay_corporate.DTOs
        /// <summary>
         /// Gets or sets the user ID.
         /// </summary>
-       public int Id { get; set; }
+       public Guid Id { get; set; }
 
    /// <summary>
         /// Gets or sets the email.
    /// </summary>
-        public string? Email { get; set; }
+  public string? Email { get; set; }
+
+     /// <summary>
+ /// Gets or sets the unique 10-digit account number.
+     /// </summary>
+     public string? AccountNumber { get; set; }
 
   /// <summary>
         /// Gets or sets the role.
@@ -112,15 +113,15 @@ namespace virtupay_corporate.DTOs
      /// </summary>
      public string? LastName { get; set; }
 
-        /// <summary>
+     /// <summary>
   /// Gets or sets the status.
  /// </summary>
         public string? Status { get; set; }
 
       /// <summary>
-        /// Gets or sets the creation timestamp.
+    /// Gets or sets the creation timestamp.
    /// </summary>
-        public DateTime CreatedAt { get; set; }
+     public DateTime CreatedAt { get; set; }
     }
 
     /// <summary>

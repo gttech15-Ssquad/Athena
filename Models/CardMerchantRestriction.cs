@@ -2,38 +2,38 @@ namespace virtupay_corporate.Models
 {
     /// <summary>
     /// Represents merchant restrictions applied to a specific card.
-   /// </summary>
+    /// </summary>
     public class CardMerchantRestriction
     {
- /// <summary>
+        /// <summary>
         /// Gets or sets the unique identifier.
         /// </summary>
-        public int Id { get; set; }
-
- /// <summary>
-        /// Gets or sets the card ID.
-/// </summary>
-    public int CardId { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
-   /// Gets or sets the virtual card navigation property.
+        /// Gets or sets the card ID.
         /// </summary>
-  public VirtualCard? VirtualCard { get; set; }
+        public Guid CardId { get; set; }
 
-    /// <summary>
+        /// <summary>
+        /// Gets or sets the virtual card navigation property.
+        /// </summary>
+        public VirtualCard? VirtualCard { get; set; }
+
+        /// <summary>
         /// Gets or sets the merchant category ID.
         /// </summary>
- public int MerchantCategoryId { get; set; }
+        public Guid MerchantCategoryId { get; set; }
 
         /// <summary>
         /// Gets or sets the merchant category navigation property.
-   /// </summary>
+        /// </summary>
         public MerchantCategory? MerchantCategory { get; set; }
 
-    /// <summary>
+        /// <summary>
         /// Gets or sets a value indicating whether this merchant category is allowed.
-  /// </summary>
-      public bool IsAllowed { get; set; } = true;
+        /// </summary>
+        public bool IsAllowed { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the creation timestamp.

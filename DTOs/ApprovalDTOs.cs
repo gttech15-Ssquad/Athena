@@ -67,22 +67,22 @@ namespace virtupay_corporate.DTOs
         /// <summary>
         /// Gets or sets the approval ID.
     /// </summary>
-public int Id { get; set; }
+  public Guid Id { get; set; }
 
  /// <summary>
-        /// Gets or sets the card ID.
+     /// Gets or sets the card ID.
     /// </summary>
-        public int CardId { get; set; }
+  public Guid CardId { get; set; }
 
   /// <summary>
-        /// Gets or sets the action type.
+    /// Gets or sets the action type.
     /// </summary>
  public string? ActionType { get; set; }
 
         /// <summary>
         /// Gets or sets who requested the approval.
-   /// </summary>
-        public UserResponse? RequestedByUser { get; set; }
+ /// </summary>
+     public UserResponse? RequestedByUser { get; set; }
 
         /// <summary>
 /// Gets or sets who approved/rejected the request.
@@ -95,8 +95,8 @@ public int Id { get; set; }
  public string? Status { get; set; }
 
         /// <summary>
-        /// Gets or sets the reason for approval/rejection.
-        /// </summary>
+    /// Gets or sets the reason for approval/rejection.
+/// </summary>
       public string? Reason { get; set; }
 
         /// <summary>
@@ -104,9 +104,9 @@ public int Id { get; set; }
         /// </summary>
  public string? ActionData { get; set; }
 
-        /// <summary>
-        /// Gets or sets the creation timestamp.
-        /// </summary>
+    /// <summary>
+     /// Gets or sets the creation timestamp.
+ /// </summary>
     public DateTime CreatedAt { get; set; }
 
         /// <summary>
@@ -119,7 +119,7 @@ public int Id { get; set; }
         /// </summary>
      public DateTime ExpiresAt { get; set; }
 
-        /// <summary>
+     /// <summary>
         /// Gets or sets whether the approval is still pending.
         /// </summary>
    public bool IsPending => Status == "PENDING" && ExpiresAt > DateTime.UtcNow;

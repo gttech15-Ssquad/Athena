@@ -107,15 +107,15 @@ namespace virtupay_corporate.DTOs
     /// </summary>
     public class CardLimitResponse
     {
-        /// <summary>
+  /// <summary>
         /// Gets or sets the limit ID.
-     /// </summary>
-    public int Id { get; set; }
+   /// </summary>
+    public Guid Id { get; set; }
 
      /// <summary>
         /// Gets or sets the card ID.
         /// </summary>
-        public int CardId { get; set; }
+     public Guid CardId { get; set; }
 
  /// <summary>
         /// Gets or sets the limit type.
@@ -123,13 +123,13 @@ namespace virtupay_corporate.DTOs
  public string? LimitType { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum amount.
-        /// </summary>
+   /// Gets or sets the maximum amount.
+   /// </summary>
         public decimal Amount { get; set; }
 
   /// <summary>
      /// Gets or sets the period.
-        /// </summary>
+     /// </summary>
         public string? Period { get; set; }
 
   /// <summary>
@@ -138,7 +138,7 @@ namespace virtupay_corporate.DTOs
         public decimal Threshold { get; set; }
 
    /// <summary>
-        /// Gets or sets the used amount.
+   /// Gets or sets the used amount.
         /// </summary>
     public decimal UsedAmount { get; set; }
 
@@ -147,7 +147,7 @@ namespace virtupay_corporate.DTOs
   /// </summary>
         public decimal AvailableAmount => Amount - UsedAmount;
 
-        /// <summary>
+ /// <summary>
     /// Gets or sets the percentage used.
  /// </summary>
      public decimal PercentageUsed => Amount > 0 ? (UsedAmount / Amount) * 100 : 0;
@@ -158,12 +158,12 @@ namespace virtupay_corporate.DTOs
    public bool IsWarningReached => PercentageUsed >= Threshold;
 
  /// <summary>
-        /// Gets or sets whether this limit is active.
+/// Gets or sets whether this limit is active.
       /// </summary>
      public bool IsActive { get; set; }
 
         /// <summary>
-    /// Gets or sets the creation timestamp.
+ /// Gets or sets the creation timestamp.
      /// </summary>
      public DateTime CreatedAt { get; set; }
  }
@@ -171,13 +171,13 @@ namespace virtupay_corporate.DTOs
   /// <summary>
     /// DTO for merchant restriction request.
     /// </summary>
-    public class SetMerchantRestrictionRequest
+ public class SetMerchantRestrictionRequest
     {
-     /// <summary>
+   /// <summary>
         /// Gets or sets the merchant category ID.
         /// </summary>
     [Required(ErrorMessage = "Merchant category ID is required")]
-       public int MerchantCategoryId { get; set; }
+   public Guid MerchantCategoryId { get; set; }
 
        /// <summary>
         /// Gets or sets whether this merchant is allowed.
@@ -190,10 +190,10 @@ namespace virtupay_corporate.DTOs
     /// </summary>
     public class MerchantRestrictionResponse
     {
-        /// <summary>
+      /// <summary>
      /// Gets or sets the merchant category ID.
-        /// </summary>
-     public int MerchantCategoryId { get; set; }
+    /// </summary>
+     public Guid MerchantCategoryId { get; set; }
 
     /// <summary>
         /// Gets or sets the merchant category name.
@@ -201,8 +201,8 @@ namespace virtupay_corporate.DTOs
  public string? MerchantCategoryName { get; set; }
 
         /// <summary>
-        /// Gets or sets the merchant category code.
-        /// </summary>
+   /// Gets or sets the merchant category code.
+ /// </summary>
  public string? MerchantCategoryCode { get; set; }
 
         /// <summary>
@@ -217,30 +217,30 @@ namespace virtupay_corporate.DTOs
     }
 
     /// <summary>
-    /// DTO for merchant category response.
+/// DTO for merchant category response.
     /// </summary>
     public class MerchantCategoryResponse
     {
      /// <summary>
         /// Gets or sets the category ID.
         /// </summary>
-   public int Id { get; set; }
+   public Guid Id { get; set; }
 
         /// <summary>
         /// Gets or sets the category name.
-        /// </summary>
+ /// </summary>
         public string? Name { get; set; }
 
         /// <summary>
-        /// Gets or sets the category code.
+      /// Gets or sets the category code.
         /// </summary>
    public string? Code { get; set; }
 
         /// <summary>
      /// Gets or sets the category description.
-        /// </summary>
+    /// </summary>
      public string? Description { get; set; }
-    }
+ }
 
     /// <summary>
     /// DTO for international transaction request.

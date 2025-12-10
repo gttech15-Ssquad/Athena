@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -29,10 +29,10 @@ try
     // Add Serilog
     builder.Host.UseSerilog();
 
-    // Load configuration
+ // Load configuration
     var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") ?? "default-secret-key-min-32-characters-long-for-testing";
     var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "VirtupayCorpAPI";
-    var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "VirtupayCorpClient";
+  var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "VirtupayCorpClient";
     var dbConnectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING") ?? "Data Source=virtupay-corporate.db";
 
     // Add services to the container
@@ -43,142 +43,114 @@ try
         options.UseSqlite(dbConnectionString)
 );
 
-    // Add API documentation
+  // Add API documentation
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
-    {
-options.SwaggerDoc("v1", new OpenApiInfo
-        {
-            Title = "Virtupay Corporate API",
-       Version = "v1.0",
-     Description = "Production-ready corporate banking virtual card management system with comprehensive virtual card lifecycle, transaction processing, approval workflows, and audit trail capabilities.\n\n" +
-              "## Getting Started\n\n" +
-             "1. **Register/Login**: Use `/api/auth/register` or `/api/auth/login` to obtain a JWT token\n" +
-    "2. **Include Token**: Add `Authorization: Bearer {token}` header to all protected endpoints\n" +
-           "3. **Create Cards**: Use `/api/cards` to create and manage virtual cards\n" +
-      "4. **Process Transactions**: Create and manage card transactions via `/api/transactions`\n" +
-              "5. **Approve Actions**: Submit sensitive actions for approval via `/api/approvals`\n\n" +
-       "## Key Features\n\n" +
-       "- **JWT Authentication**: All endpoints protected with JWT token authentication\n" +
-     "- **Role-Based Access**: Different endpoints require different user roles (CEO, CFO, Admin, Delegate, Auditor)\n" +
-        "- **Approval Workflows**: Multi-level approvals for sensitive operations\n" +
-        "- **Transaction Management**: Create, complete, reverse, and dispute transactions\n" +
-    "- **Audit Trail**: Complete logging of all operations for compliance\n\n" +
-   "## Available Roles\n\n" +
-           "- **CEO**: Full system access, can approve all actions\n" +
-       "- **CFO**: Finance operations, card freezing, limit changes\n" +
-             "- **Admin**: Card management, user management, most transactions\n" +
-  "- **Delegate**: Limited transaction approval and processing\n" +
-           "- **Auditor**: Read-only access for compliance and reporting",
-      Contact = new OpenApiContact
-      {
-   Name = "Virtupay Support",
-      Email = "support@virtupay.com"
-            },
-   License = new OpenApiLicense
-     {
+  {
+        options.SwaggerDoc("v1", new OpenApiInfo
+ {
+ Title = "Virtupay Corporate API",
+         Version = "v1.0",
+ Description = "Production-ready corporate banking virtual card management system",
+         Contact = new OpenApiContact
+{
+       Name = "Virtupay Support",
+     Email = "support@virtupay.com"
+  },
+            License = new OpenApiLicense
+{
     Name = "Internal Use"
-            }
-        });
+      }
+      });
+
+    // Include XML comments for API documentation in Swagger
+        var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+      var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+        if (File.Exists(xmlPath))
+        {
+       options.IncludeXmlComments(xmlPath);
+ }
 
         // Add JWT Bearer authentication to Swagger
-        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-        {
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
             In = ParameterLocation.Header,
-Description = "Enter JWT token with Bearer prefix (e.g., Bearer eyJhbGciOiJIUzI1NiIs...)\n\n" +
-    "1. Register or Login to get a token\n" +
-       "2. Copy the token from the response\n" +
-   "3. Paste it here (without the 'Bearer ' prefix, it will be added automatically)",
-         Name = "Authorization",
-         Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+ Description = "JWT Authorization header using the Bearer scheme. Enter your token without the 'Bearer ' prefix - it will be added automatically.",
+    Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "Bearer",
+    BearerFormat = "JWT"
         });
 
         options.AddSecurityRequirement(new OpenApiSecurityRequirement
-        {
-          {
-     new OpenApiSecurityScheme
      {
+      {
+                new OpenApiSecurityScheme
+    {
            Reference = new OpenApiReference
-         {
- Type = ReferenceType.SecurityScheme,
-      Id = "Bearer"
-           }
-     },
+            {
+    Type = ReferenceType.SecurityScheme,
+  Id = "Bearer"
+                }
+      },
           new string[] { }
-            }
-     });
-
-        // Add tags for grouping endpoints
-        options.TagActionsBy(api =>
-        {
-         if (api.GroupName != null)
-       {
-       return new[] { api.GroupName };
-      }
-
-  var controllerActionDescriptor = api.ActionDescriptor as Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor;
-            if (controllerActionDescriptor != null)
-     {
-     return new[] { controllerActionDescriptor.ControllerName };
-    }
-
-  throw new InvalidOperationException("Unable to determine tag for endpoint.");
-    });
-
-        // Include XML documentation comments
-   var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-        if (File.Exists(xmlPath))
-        {
-    options.IncludeXmlComments(xmlPath);
-        }
+}
+        });
     });
 
     // Configure JWT Authentication
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
-        {
+     {
      var key = Encoding.ASCII.GetBytes(jwtSecret);
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-  ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
+options.TokenValidationParameters = new TokenValidationParameters
+         {
+       ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
     ValidateIssuer = true,
-         ValidIssuer = jwtIssuer,
-                ValidateAudience = true,
+            ValidIssuer = jwtIssuer,
+    ValidateAudience = true,
     ValidAudience = jwtAudience,
-  ValidateLifetime = true,
-         ClockSkew = TimeSpan.Zero
-         };
-      });
+    ValidateLifetime = true,
+  ClockSkew = TimeSpan.FromSeconds(5)
+        };
 
-    // Configure Authorization
-    builder.Services.AddAuthorization(options =>
-    {
-        options.AddPolicy("CEO", policy => policy.RequireRole("CEO"));
-        options.AddPolicy("CFO", policy => policy.RequireRole("CFO", "CEO"));
-        options.AddPolicy("Admin", policy => policy.RequireRole("Admin", "CFO", "CEO"));
-        options.AddPolicy("Delegate", policy => policy.RequireRole("Delegate", "Admin", "CFO", "CEO"));
-        options.AddPolicy("Auditor", policy => policy.RequireRole("Auditor"));
-    });
-
-    // Configure CORS
-    builder.Services.AddCors(options =>
-    {
-      options.AddPolicy("AllowAll", policy =>
-        {
-     policy.AllowAnyOrigin()
-         .AllowAnyMethod()
-  .AllowAnyHeader();
+            // Add event handlers to debug authentication
+       options.Events = new JwtBearerEvents
+            {
+        OnAuthenticationFailed = context =>
+       {
+     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+       logger.LogError($"Authentication failed: {context.Exception.Message}");
+  return Task.CompletedTask;
+                },
+             OnTokenValidated = context =>
+     {
+        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+   var userId = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        logger.LogInformation($"Token validated for user: {userId}");
+return Task.CompletedTask;
+        },
+                OnChallenge = context =>
+         {
+     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+    logger.LogWarning($"JWT Challenge: {context.ErrorDescription}");
+     return Task.CompletedTask;
+      }
+   };
         });
 
-        options.AddPolicy("AllowFrontend", policy =>
+    // Configure Authorization
+    builder.Services.AddAuthorization();
+
+ // Configure CORS
+    builder.Services.AddCors(options =>
+    {
+  options.AddPolicy("AllowAll", policy =>
         {
-            policy.WithOrigins("http://localhost:3000", "http://localhost:3001")
-                .AllowAnyMethod()
-   .AllowAnyHeader()
-        .AllowCredentials();
+     policy.AllowAnyOrigin()
+   .AllowAnyMethod()
+                .AllowAnyHeader();
         });
     });
 
@@ -189,16 +161,18 @@ Description = "Enter JWT token with Bearer prefix (e.g., Bearer eyJhbGciOiJIUzI1
     builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
     builder.Services.AddScoped<IApprovalRepository, ApprovalRepository>();
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+    builder.Services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
 
     // Register services
     builder.Services.AddScoped<IAuthService, AuthService>();
-  builder.Services.AddScoped<ICardService, CardServiceImpl>();
+    builder.Services.AddScoped<ICardService, CardServiceImpl>();
     builder.Services.AddScoped<ICardLimitService, CardLimitServiceImpl>();
     builder.Services.AddScoped<IBalanceService, BalanceServiceImpl>();
     builder.Services.AddScoped<ITransactionService, TransactionServiceImpl>();
     builder.Services.AddScoped<IApprovalService, ApprovalServiceImpl>();
     builder.Services.AddScoped<IAuditService, AuditService>();
-    builder.Services.AddScoped<INotificationService, NotificationServiceImpl>();
+ builder.Services.AddScoped<INotificationService, NotificationServiceImpl>();
+    builder.Services.AddScoped<IAccountBalanceService, AccountBalanceServiceImpl>();
 
     // Register helpers
     builder.Services.AddSingleton<IJwtTokenHelper>(new JwtTokenHelper(jwtSecret, jwtIssuer, jwtAudience));
@@ -212,21 +186,21 @@ Description = "Enter JWT token with Bearer prefix (e.g., Bearer eyJhbGciOiJIUzI1
     // Configure the HTTP request pipeline
     if (app.Environment.IsDevelopment())
     {
- app.UseSwagger();
-      app.UseSwaggerUI(c =>
+      app.UseSwagger();
+        app.UseSwaggerUI(c =>
         {
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "Virtupay Corporate API v1");
             c.RoutePrefix = string.Empty;
         });
     }
 
-    // Use CORS
-    app.UseCors("AllowFrontend");
+    // Use CORS - AllowAll for development
+    app.UseCors("AllowAll");
 
-    // Use HTTPS redirection (in development too, since we have HTTPS configured)
+    // Use HTTPS redirection
     app.UseHttpsRedirection();
 
-    // Use authentication and authorization
+  // Use authentication and authorization - ORDER MATTERS!
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -236,29 +210,29 @@ Description = "Enter JWT token with Bearer prefix (e.g., Bearer eyJhbGciOiJIUzI1
     // Initialize database
     using (var scope = app.Services.CreateScope())
     {
-        var dbContext = scope.ServiceProvider.GetRequiredService<CorporateDbContext>();
-   
+      var dbContext = scope.ServiceProvider.GetRequiredService<CorporateDbContext>();
+
         try
-    {
-         // For development, use EnsureCreatedAsync to create the database schema
-          if (app.Environment.IsDevelopment())
-    {
-     await dbContext.Database.EnsureCreatedAsync();
+        {
+      // For development, use EnsureCreatedAsync to create the database schema
+  if (app.Environment.IsDevelopment())
+         {
+   await dbContext.Database.EnsureCreatedAsync();
             }
-    else
-   {
-        // For production, use migrations
-       await dbContext.Database.MigrateAsync();
-     }
-    
- // Seed demo data
-            await DbSeeder.SeedAsync(dbContext);
+      else
+            {
+                // For production, use migrations
+    await dbContext.Database.MigrateAsync();
+      }
+
+            // Seed demo data
+        await DbSeeder.SeedAsync(dbContext);
         }
-        catch (Exception ex)
-     {
-        Log.Error(ex, "An error occurred while initializing the database");
- throw;
-}
+      catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred while initializing the database");
+            throw;
+        }
     }
 
     app.Run();

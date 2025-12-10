@@ -13,7 +13,7 @@ namespace virtupay_corporate.Helpers
         /// <summary>
         /// Generates a JWT token for a user.
         /// </summary>
-        string GenerateToken(int userId, string email, string role);
+        string GenerateToken(Guid userId, string email, string role);
 
         /// <summary>
         /// Validates and retrieves claims from a token.
@@ -23,39 +23,39 @@ namespace virtupay_corporate.Helpers
       /// <summary>
         /// Extracts the user ID from a token.
         /// </summary>
-   int? ExtractUserId(string token);
+   Guid? ExtractUserId(string token);
 
    /// <summary>
-        /// Extracts the role from a token.
+  /// Extracts the role from a token.
         /// </summary>
         string? ExtractRole(string token);
     }
 
     /// <summary>
     /// Implementation of JWT token helper.
-    /// </summary>
-    public class JwtTokenHelper : IJwtTokenHelper
+ /// </summary>
+public class JwtTokenHelper : IJwtTokenHelper
     {
         private readonly string _secret;
         private readonly string _issuer;
         private readonly string _audience;
       private readonly int _expirationMinutes = 1440; // 24 hours
 
-        public JwtTokenHelper(string secret, string issuer, string audience)
+  public JwtTokenHelper(string secret, string issuer, string audience)
         {
        _secret = secret;
       _issuer = issuer;
      _audience = audience;
         }
 
-        public string GenerateToken(int userId, string email, string role)
+        public string GenerateToken(Guid userId, string email, string role)
         {
-            var key = Encoding.ASCII.GetBytes(_secret);
-         var tokenDescriptor = new SecurityTokenDescriptor
+   var key = Encoding.ASCII.GetBytes(_secret);
+    var tokenDescriptor = new SecurityTokenDescriptor
     {
   Subject = new ClaimsIdentity(new[]
        {
-             new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+     new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
         new Claim(ClaimTypes.Email, email),
   new Claim(ClaimTypes.Role, role)
     }),
@@ -66,16 +66,16 @@ namespace virtupay_corporate.Helpers
   };
 
       var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
+  var token = tokenHandler.CreateToken(tokenDescriptor);
 
             return tokenHandler.WriteToken(token);
       }
 
    public ClaimsPrincipal? ValidateToken(string token)
-        {
+     {
          try
-            {
-                var key = Encoding.ASCII.GetBytes(_secret);
+    {
+ var key = Encoding.ASCII.GetBytes(_secret);
       var tokenHandler = new JwtSecurityTokenHandler();
 
      var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
@@ -86,31 +86,32 @@ namespace virtupay_corporate.Helpers
     ValidIssuer = _issuer,
    ValidateAudience = true,
     ValidAudience = _audience,
-            ValidateLifetime = true,
-ClockSkew = TimeSpan.Zero
+ ValidateLifetime = true,
+ClockSkew = TimeSpan.FromSeconds(5)
      }, out SecurityToken validatedToken);
 
-                return principal;
-      }
-    catch
+        return principal;
+ }
+    catch (Exception ex)
 {
-            return null;
-            }
-        }
+         Console.WriteLine($"Token validation failed: {ex.Message}");
+   return null;
+      }
+ }
 
-        public int? ExtractUserId(string token)
+        public Guid? ExtractUserId(string token)
         {
       var principal = ValidateToken(token);
       if (principal == null) return null;
 
-       var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier);
-         return userIdClaim != null && int.TryParse(userIdClaim.Value, out var userId) ? userId : null;
+     var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier);
+      return userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId) ? userId : null;
  }
 
-        public string? ExtractRole(string token)
+    public string? ExtractRole(string token)
   {
    var principal = ValidateToken(token);
     return principal?.FindFirst(ClaimTypes.Role)?.Value;
-        }
+      }
     }
 }

@@ -47,12 +47,12 @@ namespace virtupay_corporate.Controllers
         [HttpPost]
      [ProducesResponseType(typeof(ApprovalResponse), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> RequestApproval(int cardId, [FromBody] RequestApprovalRequest request)
+     public async Task<IActionResult> RequestApproval(Guid cardId, [FromBody] RequestApprovalRequest request)
         {
    try
  {
         if (!ModelState.IsValid)
-      return BadRequest(ModelState);
+    return BadRequest(ModelState);
 
    var userId = GetUserId();
       if (!userId.HasValue)
@@ -60,13 +60,13 @@ namespace virtupay_corporate.Controllers
 
     var approval = await _approvalService.RequestApprovalAsync(cardId, request.ActionType, userId.Value, request.ActionData);
 
-         if (approval == null)
+  if (approval == null)
           return BadRequest(new ErrorResponse { Code = "APPROVAL_REQUEST_FAILED", Message = "Failed to request approval" });
 
-                _logger.LogInformation("Approval requested for card {CardId} by user {UserId}", cardId, userId);
+    _logger.LogInformation("Approval requested for card {CardId} by user {UserId}", cardId, userId);
      return CreatedAtAction(nameof(GetApproval), new { approvalId = approval.Id }, MapApprovalToResponse(approval));
-   }
-            catch (Exception ex)
+}
+    catch (Exception ex)
          {
          _logger.LogError(ex, "Error requesting approval");
  return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Code = "INTERNAL_ERROR", Message = "An error occurred" });
@@ -81,15 +81,15 @@ namespace virtupay_corporate.Controllers
      /// Sorted by creation date, with oldest requests shown first (FIFO processing).
      /// </summary>
         /// <returns>List of all pending approvals awaiting action</returns>
-        [HttpGet("pending")]
+      [HttpGet("pending")]
         [Authorize(Roles = "CEO,CFO,Admin")]
         [ProducesResponseType(typeof(List<ApprovalResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetPendingApprovals()
      {
-       try
+    try
   {
         var approvals = await _approvalService.GetPendingApprovalsAsync();
-       var response = approvals.Select(MapApprovalToResponse).ToList();
+     var response = approvals.Select(MapApprovalToResponse).ToList();
     return Ok(response);
         }
         catch (Exception ex)
@@ -97,31 +97,31 @@ namespace virtupay_corporate.Controllers
      _logger.LogError(ex, "Error getting pending approvals");
       return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Code = "INTERNAL_ERROR", Message = "An error occurred" });
   }
-        }
+     }
 
-     /// <summary>
+ /// <summary>
         /// Get a specific approval request by ID
      /// 
         /// Retrieves detailed information about a single approval request including action type, status,
         /// requested by, approval comments, and decision timestamps. Useful for tracking individual approval history.
         /// </summary>
         /// <param name="approvalId">The ID of the approval request to retrieve</param>
-      /// <returns>Detailed approval request information</returns>
-        [HttpGet("{approvalId}")]
+    /// <returns>Detailed approval request information</returns>
+ [HttpGet("{approvalId}")]
    [ProducesResponseType(typeof(ApprovalResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetApproval(int approvalId)
-        {
-            try
-            {
-        var approvals = await _approvalService.GetPendingApprovalsAsync();
-                var approval = approvals.FirstOrDefault(a => a.Id == approvalId);
+        public async Task<IActionResult> GetApproval(Guid approvalId)
+ {
+  try
+ {
+      var approvals = await _approvalService.GetPendingApprovalsAsync();
+   var approval = approvals.FirstOrDefault(a => a.Id == approvalId);
 
-              if (approval == null)
-           return NotFound(new ErrorResponse { Code = "APPROVAL_NOT_FOUND", Message = "Approval not found" });
+     if (approval == null)
+    return NotFound(new ErrorResponse { Code = "APPROVAL_NOT_FOUND", Message = "Approval not found" });
 
         return Ok(MapApprovalToResponse(approval));
-            }
+    }
     catch (Exception ex)
      {
              _logger.LogError(ex, "Error getting approval");
@@ -129,24 +129,24 @@ namespace virtupay_corporate.Controllers
      }
         }
 
-     /// <summary>
-        /// Approve an approval request
+ /// <summary>
+    /// Approve an approval request
         /// 
-        /// Authorizes a pending approval request, allowing the requested action to proceed.
+ /// Authorizes a pending approval request, allowing the requested action to proceed.
    /// Only authorized managers (CEO, CFO, Admin) can approve based on action type.
-        /// The approver's comment is recorded for the audit trail. Approvals expire after 48 hours.
+  /// The approver's comment is recorded for the audit trail. Approvals expire after 48 hours.
         /// </summary>
    /// <param name="approvalId">The ID of the approval request to approve</param>
      /// <param name="request">Approval decision with optional comment for the record</param>
-        /// <returns>Success message if approval was granted</returns>
-        [HttpPut("{approvalId}/approve")]
+    /// <returns>Success message if approval was granted</returns>
+    [HttpPut("{approvalId}/approve")]
         [Authorize(Roles = "CEO,CFO,Admin")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-      public async Task<IActionResult> ApproveApproval(int approvalId, [FromBody] ApproveApprovalRequest request)
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+      public async Task<IActionResult> ApproveApproval(Guid approvalId, [FromBody] ApproveApprovalRequest request)
         {
-            try
-            {
+        try
+         {
    var userId = GetUserId();
 if (!userId.HasValue)
 return Unauthorized();
@@ -156,76 +156,76 @@ return Unauthorized();
       return NotFound(new ErrorResponse { Code = "APPROVAL_NOT_FOUND", Message = "Approval not found" });
 
     _logger.LogInformation("Approval {ApprovalId} approved by user {UserId}", approvalId, userId);
-     return Ok(new { message = "Approval approved successfully" });
+   return Ok(new { message = "Approval approved successfully" });
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error approving approval");
+   catch (Exception ex)
+        {
+       _logger.LogError(ex, "Error approving approval");
           return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Code = "INTERNAL_ERROR", Message = "An error occurred" });
             }
         }
 
-     /// <summary>
+/// <summary>
         /// Reject an approval request
  /// 
-        /// Denies a pending approval request, preventing the requested action from proceeding.
-        /// Only authorized managers can reject. The rejection reason is recorded for audit and to inform the requester
-        /// why their action was not approved. The requester can submit a new approval request if needed.
+  /// Denies a pending approval request, preventing the requested action from proceeding.
+     /// Only authorized managers can reject. The rejection reason is recorded for audit and to inform the requester
+  /// why their action was not approved. The requester can submit a new approval request if needed.
         /// </summary>
-        /// <param name="approvalId">The ID of the approval request to reject</param>
+   /// <param name="approvalId">The ID of the approval request to reject</param>
         /// <param name="request">Rejection reason explaining why the approval was denied</param>
         /// <returns>Success message if rejection was processed</returns>
    [HttpPut("{approvalId}/reject")]
         [Authorize(Roles = "CEO,CFO,Admin")]
  [ProducesResponseType(StatusCodes.Status200OK)]
      [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-  public async Task<IActionResult> RejectApproval(int approvalId, [FromBody] RejectApprovalRequest request)
-        {
-      try
-        {
+  public async Task<IActionResult> RejectApproval(Guid approvalId, [FromBody] RejectApprovalRequest request)
+   {
+  try
+  {
  var userId = GetUserId();
       if (!userId.HasValue)
   return Unauthorized();
 
-                var result = await _approvalService.RejectAsync(approvalId, userId.Value, request.Reason);
+   var result = await _approvalService.RejectAsync(approvalId, userId.Value, request.Reason);
        if (!result)
    return NotFound(new ErrorResponse { Code = "APPROVAL_NOT_FOUND", Message = "Approval not found" });
 
-                _logger.LogInformation("Approval {ApprovalId} rejected by user {UserId}", approvalId, userId);
-         return Ok(new { message = "Approval rejected successfully" });
+      _logger.LogInformation("Approval {ApprovalId} rejected by user {UserId}", approvalId, userId);
+       return Ok(new { message = "Approval rejected successfully" });
         }
      catch (Exception ex)
             {
     _logger.LogError(ex, "Error rejecting approval");
-              return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Code = "INTERNAL_ERROR", Message = "An error occurred" });
+      return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Code = "INTERNAL_ERROR", Message = "An error occurred" });
         }
-        }
+     }
 
    /// <summary>
       /// Get approval history for a specific card
-        /// 
-        /// Retrieves all approval requests (past and present) associated with a particular card.
+      /// 
+  /// Retrieves all approval requests (past and present) associated with a particular card.
         /// Includes approved, rejected, and pending requests. Useful for compliance audits and understanding card action history.
         /// Shows decision comments and who approved/rejected each request.
         /// </summary>
         /// <param name="cardId">The ID of the card to get approval history for</param>
-        /// <returns>Complete approval history for the card</returns>
+      /// <returns>Complete approval history for the card</returns>
       [HttpGet("card/{cardId}/history")]
     [ProducesResponseType(typeof(List<ApprovalResponse>), StatusCodes.Status200OK)]
-     public async Task<IActionResult> GetApprovalHistory(int cardId)
+     public async Task<IActionResult> GetApprovalHistory(Guid cardId)
         {
       try
        {
         var approvals = await _approvalService.GetApprovalHistoryAsync(cardId);
-             var response = approvals.Select(MapApprovalToResponse).ToList();
+          var response = approvals.Select(MapApprovalToResponse).ToList();
     return Ok(response);
-            }
-    catch (Exception ex)
+    }
+  catch (Exception ex)
             {
     _logger.LogError(ex, "Error getting approval history");
-                return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Code = "INTERNAL_ERROR", Message = "An error occurred" });
+      return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Code = "INTERNAL_ERROR", Message = "An error occurred" });
      }
-        }
+    }
 
         /// <summary>
         /// Get approval requirements for an action type
@@ -320,10 +320,10 @@ _logger.LogError(ex, "Error getting approval requirements");
         /// <summary>
     /// Gets the current user ID from claims.
         /// </summary>
-     private int? GetUserId()
+     private Guid? GetUserId()
     {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-     return userIdClaim != null && int.TryParse(userIdClaim.Value, out var userId) ? userId : null;
+     return userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId) ? userId : null;
         }
     }
 }
