@@ -10,26 +10,26 @@ namespace virtupay_corporate.DTOs
       /// <summary>
         /// Gets or sets the department name.
         /// </summary>
-    [Required(ErrorMessage = "Department name is required")]
+  [Required(ErrorMessage = "Department name is required")]
    [MaxLength(255, ErrorMessage = "Name cannot exceed 255 characters")]
     public required string Name { get; set; }
 
         /// <summary>
-        /// Gets or sets the department budget.
+  /// Gets or sets the department budget.
         /// </summary>
         [Required(ErrorMessage = "Budget is required")]
-    [Range(0, 999999999)]
+  [Range(0, 999999999)]
  public decimal Budget { get; set; }
 
         /// <summary>
-      /// Gets or sets the manager ID.
+/// Gets or sets the manager ID.
       /// </summary>
-        public int? ManagerId { get; set; }
+        public Guid? ManagerId { get; set; }
     }
 
     /// <summary>
     /// DTO for updating a department.
-    /// </summary>
+  /// </summary>
    public class UpdateDepartmentRequest
     {
         /// <summary>
@@ -41,22 +41,22 @@ namespace virtupay_corporate.DTOs
      /// <summary>
         /// Gets or sets the department budget.
         /// </summary>
-        [Range(0, 999999999)]
+      [Range(0, 999999999)]
     public decimal? Budget { get; set; }
 
   /// <summary>
      /// Gets or sets the manager ID.
   /// </summary>
-        public int? ManagerId { get; set; }
+        public Guid? ManagerId { get; set; }
 
         /// <summary>
  /// Gets or sets the department status.
         /// </summary>
-      [RegularExpression("^(Active|Inactive)$")]
+ [RegularExpression("^(Active|Inactive)$")]
       public string? Status { get; set; }
     }
 
-    /// <summary>
+  /// <summary>
     /// DTO for department response.
     /// </summary>
     public class DepartmentResponse
@@ -64,22 +64,22 @@ namespace virtupay_corporate.DTOs
 /// <summary>
    /// Gets or sets the department ID.
  /// </summary>
-        public int Id { get; set; }
+        public string Id { get; set; } = "";
 
    /// <summary>
-        /// Gets or sets the department name.
+    /// Gets or sets the department name.
       /// </summary>
   public string? Name { get; set; }
 
  /// <summary>
-        /// Gets or sets the department budget.
-        /// </summary>
+     /// Gets or sets the department budget.
+   /// </summary>
      public decimal Budget { get; set; }
 
-        /// <summary>
+ /// <summary>
     /// Gets or sets the manager ID.
-    /// </summary>
-   public int? ManagerId { get; set; }
+ /// </summary>
+   public string? ManagerId { get; set; }
 
   /// <summary>
         /// Gets or sets the manager name.
@@ -88,13 +88,13 @@ namespace virtupay_corporate.DTOs
 
         /// <summary>
   /// Gets or sets the department status.
-        /// </summary>
+     /// </summary>
   public string? Status { get; set; }
 
    /// <summary>
  /// Gets or sets the total users in department.
-        /// </summary>
-        public int UserCount { get; set; }
+   /// </summary>
+   public int UserCount { get; set; }
 
    /// <summary>
         /// Gets or sets the creation timestamp.
@@ -122,9 +122,9 @@ namespace virtupay_corporate.DTOs
         /// </summary>
        public List<UserResponse> Users { get; set; } = new List<UserResponse>();
 
-      /// <summary>
+  /// <summary>
         /// Gets or sets the total spent.
-        /// </summary>
+     /// </summary>
     public decimal TotalSpent { get; set; }
 
       /// <summary>
@@ -136,7 +136,7 @@ namespace virtupay_corporate.DTOs
         /// Gets or sets the budget utilization percentage.
         /// </summary>
         public decimal BudgetUtilization => Department?.Budget > 0 ? (TotalSpent / Department.Budget) * 100 : 0;
-    }
+ }
 
     /// <summary>
 /// DTO for audit log response.
@@ -145,23 +145,23 @@ namespace virtupay_corporate.DTOs
     {
         /// <summary>
         /// Gets or sets the audit log ID.
-        /// </summary>
-  public int Id { get; set; }
+ /// </summary>
+  public string Id { get; set; } = "";
 
      /// <summary>
-    /// Gets or sets the user ID.
+ /// Gets or sets the user ID.
 /// </summary>
-  public int? UserId { get; set; }
+  public string? UserId { get; set; }
 
         /// <summary>
-    /// Gets or sets the user email.
+  /// Gets or sets the user email.
    /// </summary>
        public string? UserEmail { get; set; }
 
     /// <summary>
    /// Gets or sets the action performed.
  /// </summary>
-     public string? Action { get; set; }
+   public string? Action { get; set; }
 
    /// <summary>
    /// Gets or sets the resource type.
@@ -171,11 +171,11 @@ namespace virtupay_corporate.DTOs
     /// <summary>
      /// Gets or sets the resource ID.
      /// </summary>
-        public int? ResourceId { get; set; }
+     public string? ResourceId { get; set; }
 
    /// <summary>
         /// Gets or sets the changes made.
-   /// </summary>
+/// </summary>
    public string? Changes { get; set; }
 
    /// <summary>
@@ -194,7 +194,7 @@ namespace virtupay_corporate.DTOs
         public DateTime Timestamp { get; set; }
 
     /// <summary>
-        /// Gets or sets any error message.
+   /// Gets or sets any error message.
  /// </summary>
    public string? ErrorMessage { get; set; }
     }
@@ -218,18 +218,18 @@ namespace virtupay_corporate.DTOs
 
   /// <summary>
         /// Gets or sets the start date.
-        /// </summary>
+ /// </summary>
   public DateTime? StartDate { get; set; }
 
    /// <summary>
         /// Gets or sets the end date.
-       /// </summary>
+  /// </summary>
    public DateTime? EndDate { get; set; }
 
       /// <summary>
     /// Gets or sets the user ID.
    /// </summary>
-        public int? UserId { get; set; }
+        public Guid? UserId { get; set; }
 
    /// <summary>
  /// Gets or sets the page number.
@@ -262,7 +262,7 @@ namespace virtupay_corporate.DTOs
    /// <summary>
  /// Gets or sets the total users.
         /// </summary>
-      public int TotalUsers { get; set; }
+   public int TotalUsers { get; set; }
 
   /// <summary>
         /// Gets or sets the total cards.
@@ -270,7 +270,7 @@ namespace virtupay_corporate.DTOs
  public int TotalCards { get; set; }
 
        /// <summary>
-        /// Gets or sets the total transactions.
+     /// Gets or sets the total transactions.
   /// </summary>
     public int TotalTransactions { get; set; }
 
@@ -281,17 +281,17 @@ namespace virtupay_corporate.DTOs
 
   /// <summary>
     /// Gets or sets the active approvals.
-        /// </summary>
+    /// </summary>
  public int ActiveApprovals { get; set; }
 
     /// <summary>
     /// Gets or sets high-risk transactions count.
         /// </summary>
-     public int HighRiskTransactions { get; set; }
+ public int HighRiskTransactions { get; set; }
 
   /// <summary>
         /// Gets or sets the summary by department.
-    /// </summary>
-        public Dictionary<string, decimal> SummaryByDepartment { get; set; } = new Dictionary<string, decimal>();
+  /// </summary>
+     public Dictionary<string, decimal> SummaryByDepartment { get; set; } = new Dictionary<string, decimal>();
     }
 }

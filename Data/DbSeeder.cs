@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using virtupay_corporate.Models;
 
 namespace virtupay_corporate.Data
@@ -55,6 +56,12 @@ namespace virtupay_corporate.Data
             // Seed demo users if not already seeded
             if (!context.Users.Any())
             {
+                // Get departments for reference
+                var departments = await context.Departments.ToListAsync();
+                var itDept = departments.FirstOrDefault(d => d.Name == "IT");
+                var hrDept = departments.FirstOrDefault(d => d.Name == "HR");
+                var complianceDept = departments.FirstOrDefault(d => d.Name == "Compliance");
+
                 // Assuming password hashing would be done in the actual application
                 // For demo purposes, using placeholder hashes (would need proper hashing in production)
                 var demoUsers = new List<User>
@@ -85,7 +92,7 @@ namespace virtupay_corporate.Data
                         FirstName = "John",
                         LastName = "Smith",
                         Status = "Active",
-                        DepartmentId = 6 // IT
+                        DepartmentId = itDept?.Id
                     },
                     new User
                     {
@@ -95,7 +102,7 @@ namespace virtupay_corporate.Data
                         FirstName = "Emily",
                         LastName = "Wilson",
                         Status = "Active",
-                        DepartmentId = 2 // HR
+                        DepartmentId = hrDept?.Id
                     },
                     new User
                     {
@@ -105,7 +112,7 @@ namespace virtupay_corporate.Data
                         FirstName = "Robert",
                         LastName = "Brown",
                         Status = "Active",
-                        DepartmentId = 7 // Compliance
+                        DepartmentId = complianceDept?.Id
                     }
                 };
 

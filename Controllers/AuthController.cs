@@ -31,16 +31,13 @@ namespace virtupay_corporate.Controllers
 
         /// <summary>
         /// Register a new user account
-   /// 
- /// Creates a new user account with the provided credentials and role assignment.
-        /// Returns a JWT token upon successful registration for immediate API access.
- /// 
-      /// Available Roles: CEO, CFO, Admin, Delegate, Auditor
         /// 
-  /// Example: Register a new admin user with email and password
-   /// </summary>
-        /// <param name="request">Registration details including email, password, role, name, and department</param>
-        /// <returns>Authentication response with JWT token and user profile</returns>
+        /// Creates a new user account with email and password.
+        /// Automatically generates a unique 10-digit account number and creates an AccountBalance record.
+  /// Returns a JWT token upon successful registration for immediate API access.
+        /// </summary>
+        /// <param name="request">Registration details (email, password, optional name)</param>
+        /// <returns>Authentication response with JWT token and user profile including account number</returns>
   [HttpPost("register")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
@@ -68,7 +65,13 @@ namespace virtupay_corporate.Controllers
      });
       }
 
-       var user = await _authService.RegisterAsync(request.Email, request.Password, request.Role, request.FirstName, request.LastName, request.DepartmentId);
+       var user = await _authService.RegisterAsync(
+         request.Email, 
+     request.Password, 
+   request.Role,  // ? Use selected role (APP or VIEW)
+request.FirstName, 
+    request.LastName, 
+          null);  // No department required
 
           if (user == null)
     return BadRequest(new ErrorResponse
@@ -82,21 +85,22 @@ namespace virtupay_corporate.Controllers
 
        var response = new AuthResponse
         {
-       Token = token,
+    Token = token,
          ExpiresAt = DateTime.UtcNow.AddMinutes(1440),
  User = new UserResponse
     {
      Id = user.Id,
-             Email = user.Email,
-         Role = user.Role,
-           FirstName = user.FirstName,
+      Email = user.Email,
+   AccountNumber = user.AccountNumber,
+   Role = user.Role,
+         FirstName = user.FirstName,
         LastName = user.LastName,
          Status = user.Status,
-          CreatedAt = user.CreatedAt
+        CreatedAt = user.CreatedAt
          }
         };
 
-       _logger.LogInformation("User registered successfully: {Email}", request.Email);
+     _logger.LogInformation("User registered successfully: {Email}, AccountNumber: {AccountNumber}", request.Email, user.AccountNumber);
           return CreatedAtAction(nameof(Register), response);
        }
    catch (Exception ex)
@@ -164,6 +168,7 @@ Code = "INVALID_CREDENTIALS",
    {
  Id = user.Id,
       Email = user.Email,
+   AccountNumber = user.AccountNumber,
    Role = user.Role,
         FirstName = user.FirstName,
     LastName = user.LastName,
@@ -271,6 +276,7 @@ Code = "PASSWORD_CHANGE_FAILED",
     {
 Id = user.Id,
      Email = user.Email,
+   AccountNumber = user.AccountNumber,
   Role = user.Role,
  FirstName = user.FirstName,
             LastName = user.LastName,

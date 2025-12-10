@@ -4,20 +4,20 @@ namespace virtupay_corporate.Models
     /// Represents the dynamic balance of a virtual card.
  /// </summary>
     public class CardBalance
-    {
+  {
  /// <summary>
-        /// Gets or sets the unique identifier.
+   /// Gets or sets the unique identifier.
      /// </summary>
-        public int Id { get; set; }
+   public Guid Id { get; set; } = Guid.NewGuid();
 
       /// <summary>
         /// Gets or sets the card ID.
  /// </summary>
-        public int CardId { get; set; }
+        public Guid CardId { get; set; }
 
-        /// <summary>
+    /// <summary>
       /// Gets or sets the virtual card navigation property.
-        /// </summary>
+      /// </summary>
         public VirtualCard? VirtualCard { get; set; }
 
    /// <summary>
@@ -26,9 +26,9 @@ namespace virtupay_corporate.Models
         public decimal AvailableBalance { get; set; }
 
   /// <summary>
-        /// Gets or sets the reserved balance (holds from pending transactions).
+    /// Gets or sets the reserved balance (holds from pending transactions).
      /// </summary>
-        public decimal ReservedBalance { get; set; }
+      public decimal ReservedBalance { get; set; }
 
         /// <summary>
   /// Gets or sets the used balance (completed transactions in current period).
@@ -38,7 +38,7 @@ namespace virtupay_corporate.Models
   /// <summary>
       /// Gets or sets the currency code.
 /// </summary>
-    public required string Currency { get; set; } = "USD";
+    public required string Currency { get; set; } = "NGN";
 
     /// <summary>
         /// Gets or sets the last updated timestamp.
@@ -46,9 +46,9 @@ namespace virtupay_corporate.Models
    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
 
         /// <summary>
-        /// Calculates the total balance (available + reserved + used).
-        /// </summary>
+/// Calculates the total balance (available + reserved + used).
+    /// </summary>
    /// <returns>The total balance.</returns>
-       public decimal GetTotalBalance() => AvailableBalance + ReservedBalance + UsedBalance;
+ public decimal GetTotalBalance() => AvailableBalance + ReservedBalance + UsedBalance;
     }
 }

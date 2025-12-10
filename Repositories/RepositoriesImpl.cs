@@ -5,6 +5,55 @@ using virtupay_corporate.Models;
 namespace virtupay_corporate.Repositories
 {
     /// <summary>
+    /// Generic repository implementation for common CRUD operations.
+    /// </summary>
+    public class GenericRepository<T> : IRepository<T> where T : class
+    {
+    protected readonly CorporateDbContext _context;
+   protected readonly DbSet<T> _dbSet;
+
+ public GenericRepository(CorporateDbContext context)
+        {
+  _context = context;
+     _dbSet = context.Set<T>();
+        }
+
+  public virtual async Task<T?> GetByIdAsync(Guid id)
+        {
+    return await _dbSet.FindAsync(id);
+        }
+
+    public virtual async Task<List<T>> GetAllAsync()
+ {
+   return await _dbSet.ToListAsync();
+        }
+
+        public virtual async Task<T> CreateAsync(T entity)
+        {
+_dbSet.Add(entity);
+    await _context.SaveChangesAsync();
+     return entity;
+   }
+
+        public virtual async Task<T> UpdateAsync(T entity)
+        {
+     _dbSet.Update(entity);
+   await _context.SaveChangesAsync();
+        return entity;
+     }
+
+        public virtual async Task<bool> DeleteAsync(Guid id)
+       {
+  var entity = await GetByIdAsync(id);
+    if (entity == null) return false;
+
+     _dbSet.Remove(entity);
+    await _context.SaveChangesAsync();
+      return true;
+   }
+    }
+
+    /// <summary>
     /// Implementation of user repository.
     /// </summary>
 public class UserRepository : IUserRepository
@@ -19,42 +68,49 @@ private readonly CorporateDbContext _context;
         public async Task<User?> GetByIdAsync(int id)
  {
  return await _context.Users
-       .Where(u => !u.IsDeleted)
-     .FirstOrDefaultAsync(u => u.Id == id);
-        }
+    .Where(u => !u.IsDeleted)
+     .FirstOrDefaultAsync();
+   }
 
  public async Task<User?> GetByEmailAsync(string email)
         {
  return await _context.Users
        .Where(u => !u.IsDeleted && u.Email == email)
     .FirstOrDefaultAsync();
+ }
+
+  public async Task<User?> GetByAccountNumberAsync(string accountNumber)
+        {
+ return await _context.Users
+       .Where(u => !u.IsDeleted && u.AccountNumber == accountNumber)
+    .FirstOrDefaultAsync();
     }
 
-        public async Task<List<User>> GetAllAsync(int? departmentId = null, string? role = null)
+  public async Task<List<User>> GetAllAsync(Guid? departmentId = null, string? role = null)
         {
   var query = _context.Users
 .Where(u => !u.IsDeleted)
     .Include(u => u.Department)
    .AsQueryable();
 
-            if (departmentId.HasValue)
+       if (departmentId.HasValue)
      query = query.Where(u => u.DepartmentId == departmentId);
 
   if (!string.IsNullOrEmpty(role))
  query = query.Where(u => u.Role == role);
 
-            return await query.ToListAsync();
+  return await query.ToListAsync();
         }
 
   public async Task<User> CreateAsync(User user)
 {
        _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+          await _context.SaveChangesAsync();
        return user;
         }
 
   public async Task<User> UpdateAsync(User user)
-        {
+     {
    _context.Users.Update(user);
        await _context.SaveChangesAsync();
      return user;
@@ -62,7 +118,7 @@ private readonly CorporateDbContext _context;
 
   public async Task<bool> DeleteAsync(int id)
         {
-      var user = await GetByIdAsync(id);
+ var user = await GetByIdAsync(id);
   if (user == null) return false;
 
   user.IsDeleted = true;
@@ -84,7 +140,7 @@ private readonly CorporateDbContext _context;
         }
     }
 
-    /// <summary>
+   /// <summary>
     /// Implementation of department repository.
     /// </summary>
   public class DepartmentRepository : IDepartmentRepository
@@ -92,11 +148,11 @@ private readonly CorporateDbContext _context;
      private readonly CorporateDbContext _context;
 
    public DepartmentRepository(CorporateDbContext context)
-   {
-          _context = context;
+ {
+       _context = context;
         }
 
-        public async Task<Department?> GetByIdAsync(int id)
+ public async Task<Department?> GetByIdAsync(Guid id)
  {
      return await _context.Departments
     .Where(d => !d.IsDeleted)
@@ -104,7 +160,7 @@ private readonly CorporateDbContext _context;
     }
 
         public async Task<List<Department>> GetAllAsync()
-    {
+   {
       return await _context.Departments
     .Where(d => !d.IsDeleted)
     .Include(d => d.Users)
@@ -113,37 +169,37 @@ private readonly CorporateDbContext _context;
 
         public async Task<Department> CreateAsync(Department department)
     {
-        _context.Departments.Add(department);
+   _context.Departments.Add(department);
      await _context.SaveChangesAsync();
-          return department;
+    return department;
   }
 
-        public async Task<Department> UpdateAsync(Department department)
+   public async Task<Department> UpdateAsync(Department department)
   {
     _context.Departments.Update(department);
       await _context.SaveChangesAsync();
      return department;
   }
 
- public async Task<bool> DeleteAsync(int id)
+ public async Task<bool> DeleteAsync(Guid id)
    {
        var department = await GetByIdAsync(id);
     if (department == null) return false;
 
     department.IsDeleted = true;
-      await _context.SaveChangesAsync();
-         return true;
+    await _context.SaveChangesAsync();
+      return true;
  }
 
         public async Task<(List<Department> items, int total)> GetPaginatedAsync(int pageNumber, int pageSize)
       {
-            var query = _context.Departments.Where(d => !d.IsDeleted);
+          var query = _context.Departments.Where(d => !d.IsDeleted);
    var total = await query.CountAsync();
 
    var items = await query
-               .Skip((pageNumber - 1) * pageSize)
+      .Skip((pageNumber - 1) * pageSize)
  .Take(pageSize)
-            .ToListAsync();
+    .ToListAsync();
 
   return (items, total);
    }
@@ -158,27 +214,27 @@ private readonly CorporateDbContext _context;
 
   public CardRepository(CorporateDbContext context)
      {
-            _context = context;
+    _context = context;
   }
 
-     public async Task<VirtualCard?> GetByIdAsync(int id)
+     public async Task<VirtualCard?> GetByIdAsync(Guid id)
   {
 return await _context.VirtualCards
        .Where(c => !c.IsDeleted)
       .Include(c => c.CardLimits)
-        .Include(c => c.MerchantRestrictions)
+     .Include(c => c.MerchantRestrictions)
  .Include(c => c.CardBalance)
-         .FirstOrDefaultAsync(c => c.Id == id);
+  .FirstOrDefaultAsync(c => c.Id == id);
       }
 
         public async Task<VirtualCard?> GetByCardNumberAsync(string cardNumber)
    {
        return await _context.VirtualCards
-   .Where(c => !c.IsDeleted && c.CardNumber == cardNumber)
+ .Where(c => !c.IsDeleted && c.CardNumber == cardNumber)
   .FirstOrDefaultAsync();
        }
 
-  public async Task<List<VirtualCard>> GetByUserIdAsync(int userId)
+  public async Task<List<VirtualCard>> GetByUserIdAsync(Guid userId)
    {
  return await _context.VirtualCards
        .Where(c => !c.IsDeleted && c.UserId == userId)
@@ -205,34 +261,34 @@ return await _context.VirtualCards
         {
       _context.VirtualCards.Update(card);
     await _context.SaveChangesAsync();
-         return card;
+       return card;
   }
 
-   public async Task<bool> DeleteAsync(int id)
+   public async Task<bool> DeleteAsync(Guid id)
         {
  var card = await GetByIdAsync(id);
   if (card == null) return false;
 
     card.IsDeleted = true;
-        await _context.SaveChangesAsync();
+      await _context.SaveChangesAsync();
  return true;
     }
 
-    public async Task<(List<VirtualCard> items, int total)> GetPaginatedByUserIdAsync(int userId, int pageNumber, int pageSize)
+    public async Task<(List<VirtualCard> items, int total)> GetPaginatedByUserIdAsync(Guid userId, int pageNumber, int pageSize)
     {
-         var query = _context.VirtualCards
-           .Where(c => !c.IsDeleted && c.UserId == userId);
+     var query = _context.VirtualCards
+     .Where(c => !c.IsDeleted && c.UserId == userId);
    var total = await query.CountAsync();
 
      var items = await query
      .Skip((pageNumber - 1) * pageSize)
-     .Take(pageSize)
+ .Take(pageSize)
     .Include(c => c.CardBalance)
-           .ToListAsync();
+.ToListAsync();
 
    return (items, total);
         }
-    }
+  }
 
 /// <summary>
     /// Implementation of transaction repository.
@@ -241,17 +297,17 @@ return await _context.VirtualCards
    {
    private readonly CorporateDbContext _context;
 
-        public TransactionRepository(CorporateDbContext context)
+      public TransactionRepository(CorporateDbContext context)
     {
        _context = context;
      }
 
-        public async Task<CardTransaction?> GetByIdAsync(int id)
+    public async Task<CardTransaction?> GetByIdAsync(Guid id)
      {
   return await _context.CardTransactions.FirstOrDefaultAsync(t => t.Id == id);
     }
 
-        public async Task<List<CardTransaction>> GetByCardIdAsync(int cardId)
+        public async Task<List<CardTransaction>> GetByCardIdAsync(Guid cardId)
    {
    return await _context.CardTransactions
         .Where(t => t.CardId == cardId)
@@ -259,14 +315,14 @@ return await _context.VirtualCards
   .ToListAsync();
     }
 
-        public async Task<(List<CardTransaction> items, int total)> GetPaginatedByCardIdAsync(int cardId, int pageNumber, int pageSize)
+        public async Task<(List<CardTransaction> items, int total)> GetPaginatedByCardIdAsync(Guid cardId, int pageNumber, int pageSize)
     {
-        var query = _context.CardTransactions.Where(t => t.CardId == cardId);
-         var total = await query.CountAsync();
+var query = _context.CardTransactions.Where(t => t.CardId == cardId);
+ var total = await query.CountAsync();
 
   var items = await query
     .OrderByDescending(t => t.CreatedAt)
-         .Skip((pageNumber - 1) * pageSize)
+ .Skip((pageNumber - 1) * pageSize)
          .Take(pageSize)
  .ToListAsync();
 
@@ -287,66 +343,66 @@ return await _context.VirtualCards
  return transaction;
     }
 
-    public async Task<List<CardTransaction>> GetByDateRangeAsync(int cardId, DateTime startDate, DateTime endDate)
+    public async Task<List<CardTransaction>> GetByDateRangeAsync(Guid cardId, DateTime startDate, DateTime endDate)
    {
     return await _context.CardTransactions
-           .Where(t => t.CardId == cardId && t.CreatedAt >= startDate && t.CreatedAt <= endDate)
+  .Where(t => t.CardId == cardId && t.CreatedAt >= startDate && t.CreatedAt <= endDate)
       .OrderByDescending(t => t.CreatedAt)
-     .ToListAsync();
+   .ToListAsync();
    }
     }
 
     /// <summary>
     /// Implementation of approval repository.
-    /// </summary>
+ /// </summary>
     public class ApprovalRepository : IApprovalRepository
     {
-        private readonly CorporateDbContext _context;
+     private readonly CorporateDbContext _context;
 
    public ApprovalRepository(CorporateDbContext context)
    {
        _context = context;
    }
 
-   public async Task<CardApproval?> GetByIdAsync(int id)
+   public async Task<CardApproval?> GetByIdAsync(Guid id)
       {
   return await _context.CardApprovals
-        .Include(a => a.RequestedByUser)
+ .Include(a => a.RequestedByUser)
   .Include(a => a.ApprovedByUser)
      .FirstOrDefaultAsync(a => a.Id == id);
     }
 
-        public async Task<List<CardApproval>> GetPendingAsync()
+      public async Task<List<CardApproval>> GetPendingAsync()
      {
      return await _context.CardApprovals
       .Where(a => a.Status == "PENDING" && a.ExpiresAt > DateTime.UtcNow)
    .Include(a => a.RequestedByUser)
-           .ToListAsync();
-      }
+     .ToListAsync();
+    }
 
-  public async Task<List<CardApproval>> GetByCardIdAsync(int cardId)
+  public async Task<List<CardApproval>> GetByCardIdAsync(Guid cardId)
         {
      return await _context.CardApprovals
-          .Where(a => a.CardId == cardId)
+ .Where(a => a.CardId == cardId)
    .OrderByDescending(a => a.CreatedAt)
-      .ToListAsync();
+ .ToListAsync();
    }
 
-    public async Task<(List<CardApproval> items, int total)> GetPaginatedAsync(string? status = null, int pageNumber = 1, int pageSize = 20)
-       {
-      var query = _context.CardApprovals.AsQueryable();
+   public async Task<(List<CardApproval> items, int total)> GetPaginatedAsync(string? status = null, int pageNumber = 1, int pageSize = 20)
+    {
+    var query = _context.CardApprovals.AsQueryable();
 
-       if (!string.IsNullOrEmpty(status))
+    if (!string.IsNullOrEmpty(status))
     query = query.Where(a => a.Status == status);
 
      var total = await query.CountAsync();
 
-        var items = await query
+    var items = await query
    .OrderByDescending(a => a.CreatedAt)
-             .Skip((pageNumber - 1) * pageSize)
+     .Skip((pageNumber - 1) * pageSize)
   .Take(pageSize)
        .Include(a => a.RequestedByUser)
-             .Include(a => a.ApprovedByUser)
+      .Include(a => a.ApprovedByUser)
   .ToListAsync();
 
    return (items, total);
@@ -362,7 +418,7 @@ return await _context.VirtualCards
   public async Task<CardApproval> UpdateAsync(CardApproval approval)
     {
   _context.CardApprovals.Update(approval);
-      await _context.SaveChangesAsync();
+ await _context.SaveChangesAsync();
  return approval;
    }
     }
@@ -379,16 +435,16 @@ return await _context.VirtualCards
     _context = context;
       }
 
-   public async Task<AuditLog?> GetByIdAsync(int id)
+   public async Task<AuditLog?> GetByIdAsync(Guid id)
        {
    return await _context.AuditLogs.FirstOrDefaultAsync(a => a.Id == id);
      }
 
-   public async Task<List<AuditLog>> GetByResourceAsync(string resource, int? resourceId = null)
+   public async Task<List<AuditLog>> GetByResourceAsync(string resource, Guid? resourceId = null)
      {
    var query = _context.AuditLogs.Where(a => a.Resource == resource).AsQueryable();
 
-         if (resourceId.HasValue)
+    if (resourceId.HasValue)
      query = query.Where(a => a.ResourceId == resourceId);
 
     return await query.OrderByDescending(a => a.Timestamp).ToListAsync();
@@ -405,7 +461,7 @@ return await _context.VirtualCards
           var query = _context.AuditLogs.AsQueryable();
 
      if (!string.IsNullOrEmpty(action))
-          query = query.Where(a => a.Action == action);
+       query = query.Where(a => a.Action == action);
 
       if (!string.IsNullOrEmpty(resource))
          query = query.Where(a => a.Resource == resource);
@@ -420,10 +476,10 @@ return await _context.VirtualCards
 
      var items = await query
  .OrderByDescending(a => a.Timestamp)
-         .Skip((pageNumber - 1) * pageSize)
+     .Skip((pageNumber - 1) * pageSize)
          .Take(pageSize)
      .Include(a => a.User)
-           .ToListAsync();
+     .ToListAsync();
 
        return (items, total);
       }
@@ -431,11 +487,11 @@ return await _context.VirtualCards
    public async Task<AuditLog> CreateAsync(AuditLog auditLog)
        {
     _context.AuditLogs.Add(auditLog);
-      await _context.SaveChangesAsync();
+  await _context.SaveChangesAsync();
          return auditLog;
        }
 
-   public async Task<List<AuditLog>> GetByUserIdAsync(int userId)
+   public async Task<List<AuditLog>> GetByUserIdAsync(Guid userId)
     {
    return await _context.AuditLogs
       .Where(a => a.UserId == userId)

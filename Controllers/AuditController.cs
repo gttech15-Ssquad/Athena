@@ -82,19 +82,19 @@ _logger.LogError(ex, "Error getting audit logs");
         /// <returns>List of audit logs for the specified user</returns>
         [HttpGet("user/{userId}")]
  [ProducesResponseType(typeof(List<AuditLogResponse>), StatusCodes.Status200OK)]
- public async Task<IActionResult> GetUserAuditLogs(int userId)
+ public async Task<IActionResult> GetUserAuditLogs(Guid userId)
         {
  try
             {
   var logs = await _auditService.GetUserAuditLogsAsync(userId);
-     var response = logs.Select(MapAuditLogToResponse).ToList();
-          return Ok(response);
+   var response = logs.Select(MapAuditLogToResponse).ToList();
+     return Ok(response);
     }
     catch (Exception ex)
   {
       _logger.LogError(ex, "Error getting user audit logs");
   return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Code = "INTERNAL_ERROR", Message = "An error occurred" });
-       }
+     }
  }
 
      /// <summary>
@@ -137,17 +137,17 @@ _logger.LogError(ex, "Error getting audit logs");
         {
      return new AuditLogResponse
       {
-   Id = log.Id,
-  UserId = log.UserId,
+   Id = log.Id.ToString(),
+  UserId = log.UserId?.ToString(),
    Action = log.Action,
-           Resource = log.Resource,
-  ResourceId = log.ResourceId,
+     Resource = log.Resource,
+  ResourceId = log.ResourceId?.ToString(),
   Changes = log.Changes,
-    IpAddress = log.IpAddress,
+IpAddress = log.IpAddress,
      Status = log.Status,
    Timestamp = log.Timestamp,
          ErrorMessage = log.ErrorMessage
-       };
+     };
      }
     }
 
@@ -261,42 +261,42 @@ Name = request.Name,
       [HttpGet("{departmentId}")]
    [ProducesResponseType(typeof(DepartmentResponse), StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-     public async Task<IActionResult> GetDepartment(int departmentId)
+     public async Task<IActionResult> GetDepartment(Guid departmentId)
        {
      try
      {
        var department = await _departmentRepository.GetByIdAsync(departmentId);
       if (department == null)
-         return NotFound(new ErrorResponse { Code = "DEPARTMENT_NOT_FOUND", Message = "Department not found" });
+   return NotFound(new ErrorResponse { Code = "DEPARTMENT_NOT_FOUND", Message = "Department not found" });
 
      return Ok(MapDepartmentToResponse(department));
    }
-       catch (Exception ex)
+ catch (Exception ex)
  {
      _logger.LogError(ex, "Error getting department");
        return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Code = "INTERNAL_ERROR", Message = "An error occurred" });
    }
-        }
+      }
 
   /// <summary>
    /// Update a department
         /// 
-        /// Modifies department information such as name, budget allocation, manager assignment, and status.
+   /// Modifies department information such as name, budget allocation, manager assignment, and status.
         /// Only CEO can update departments. Partial updates are supported.
         /// </summary>
-        /// <param name="departmentId">The ID of the department to update</param>
-        /// <param name="request">Updated department details (only non-null values are updated)</param>
+    /// <param name="departmentId">The ID of the department to update</param>
+     /// <param name="request">Updated department details (only non-null values are updated)</param>
         /// <returns>Updated department information</returns>
         [HttpPut("{departmentId}")]
      [Authorize(Roles = "CEO")]
  [ProducesResponseType(typeof(DepartmentResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateDepartment(int departmentId, [FromBody] UpdateDepartmentRequest request)
-       {
+  public async Task<IActionResult> UpdateDepartment(Guid departmentId, [FromBody] UpdateDepartmentRequest request)
+    {
      try
     {
           var department = await _departmentRepository.GetByIdAsync(departmentId);
-          if (department == null)
+     if (department == null)
          return NotFound(new ErrorResponse { Code = "DEPARTMENT_NOT_FOUND", Message = "Department not found" });
 
   if (!string.IsNullOrEmpty(request.Name))
@@ -311,46 +311,46 @@ Name = request.Name,
       if (!string.IsNullOrEmpty(request.Status))
     department.Status = request.Status;
 
-         var updated = await _departmentRepository.UpdateAsync(department);
+    var updated = await _departmentRepository.UpdateAsync(department);
 
     _logger.LogInformation("Department {DepartmentId} updated", departmentId);
     return Ok(MapDepartmentToResponse(updated));
-        }
+  }
 catch (Exception ex)
     {
  _logger.LogError(ex, "Error updating department");
   return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Code = "INTERNAL_ERROR", Message = "An error occurred" });
-           }
+      }
       }
 
    /// <summary>
     /// Delete a department
     /// 
-        /// Permanently removes a department from the system. Only CEO can delete departments.
+ /// Permanently removes a department from the system. Only CEO can delete departments.
         /// This action is irreversible and may affect associated users and cards.
-        /// </summary>
+      /// </summary>
         /// <param name="departmentId">The ID of the department to delete</param>
         /// <returns>No content if deletion successful</returns>
     [HttpDelete("{departmentId}")]
       [Authorize(Roles = "CEO")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
   [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteDepartment(int departmentId)
+    public async Task<IActionResult> DeleteDepartment(Guid departmentId)
    {
-     try
+  try
 {
  var result = await _departmentRepository.DeleteAsync(departmentId);
  if (!result)
         return NotFound(new ErrorResponse { Code = "DEPARTMENT_NOT_FOUND", Message = "Department not found" });
 
     _logger.LogInformation("Department {DepartmentId} deleted", departmentId);
-          return NoContent();
+      return NoContent();
    }
   catch (Exception ex)
        {
  _logger.LogError(ex, "Error deleting department");
 return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { Code = "INTERNAL_ERROR", Message = "An error occurred" });
-        }
+      }
   }
 
   /// <summary>
@@ -360,15 +360,15 @@ return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
         {
   return new DepartmentResponse
         {
-     Id = department.Id,
+     Id = department.Id.ToString(),
       Name = department.Name,
         Budget = department.Budget,
-    ManagerId = department.ManagerId,
+    ManagerId = department.ManagerId?.ToString(),
        Status = department.Status,
         UserCount = department.Users?.Count ?? 0,
            CreatedAt = department.CreatedAt,
     UpdatedAt = department.UpdatedAt
-    };
+  };
         }
   }
 }

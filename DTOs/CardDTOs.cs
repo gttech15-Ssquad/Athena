@@ -20,24 +20,24 @@ namespace virtupay_corporate.DTOs
         [MaxLength(100, ErrorMessage = "Nickname cannot exceed 100 characters")]
         public string? Nickname { get; set; }
 
-        /// <summary>
+     /// <summary>
         /// Gets or sets the department ID.
-    /// </summary>
-        public int? DepartmentId { get; set; }
+/// </summary>
+        public Guid? DepartmentId { get; set; }
 
-        /// <summary>
+  /// <summary>
  /// Gets or sets the card type.
-        /// </summary>
+   /// </summary>
     public string CardType { get; set; } = "CREDIT";
 
     /// <summary>
-        /// Gets or sets the currency code.
+    /// Gets or sets the currency code.
         /// </summary>
-        public string Currency { get; set; } = "USD";
+        public string Currency { get; set; } = "NGN";
 
-        /// <summary>
+    /// <summary>
         /// Gets or sets whether international transactions are allowed.
-        /// </summary>
+      /// </summary>
         public bool AllowInternational { get; set; } = true;
     }
 
@@ -54,7 +54,7 @@ public string? Nickname { get; set; }
 
         /// <summary>
    /// Gets or sets whether international transactions are allowed.
-        /// </summary>
+     /// </summary>
    public bool? AllowInternational { get; set; }
 
         /// <summary>
@@ -82,60 +82,60 @@ public string? Nickname { get; set; }
     /// </summary>
     public class CardResponse
     {
-        /// <summary>
+  /// <summary>
         /// Gets or sets the card ID.
         /// </summary>
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
-        /// <summary>
+   /// <summary>
         /// Gets or sets the card number (masked).
         /// </summary>
         public string? CardNumber { get; set; }
 
         /// <summary>
-        /// Gets or sets the cardholder name.
+      /// Gets or sets the cardholder name.
         /// </summary>
         public string? CardholderName { get; set; }
 
         /// <summary>
-        /// Gets or sets the card nickname.
+  /// Gets or sets the card nickname.
         /// </summary>
         public string? Nickname { get; set; }
 
-        /// <summary>
-        /// Gets or sets the expiry date.
+   /// <summary>
+ /// Gets or sets the expiry date.
         /// </summary>
-        public DateTime ExpiryDate { get; set; }
+  public DateTime ExpiryDate { get; set; }
 
         /// <summary>
-        /// Gets or sets the card status.
+     /// Gets or sets the card status.
         /// </summary>
      public string? Status { get; set; }
 
-        /// <summary>
+   /// <summary>
     /// Gets or sets the card type.
         /// </summary>
         public string? CardType { get; set; }
 
-        /// <summary>
+  /// <summary>
     /// Gets or sets the currency.
-        /// </summary>
-        public string? Currency { get; set; }
+   /// </summary>
+    public string? Currency { get; set; }
 
 /// <summary>
      /// Gets or sets whether international transactions are allowed.
         /// </summary>
         public bool AllowInternational { get; set; }
 
-        /// <summary>
+/// <summary>
     /// Gets or sets the freeze reason.
 /// </summary>
         public string? FreezeReason { get; set; }
 
-        /// <summary>
-        /// Gets or sets the frozen timestamp.
+ /// <summary>
+  /// Gets or sets the frozen timestamp.
         /// </summary>
-        public DateTime? FrozenAt { get; set; }
+   public DateTime? FrozenAt { get; set; }
 
   /// <summary>
         /// Gets or sets the creation timestamp.
@@ -143,56 +143,172 @@ public string? Nickname { get; set; }
         public DateTime CreatedAt { get; set; }
 
      /// <summary>
-        /// Gets or sets the last update timestamp.
+     /// Gets or sets the last update timestamp.
         /// </summary>
     public DateTime UpdatedAt { get; set; }
     }
 
     /// <summary>
-/// DTO for detailed card information.
+ /// DTO for detailed card information.
     /// </summary>
     public class CardDetailResponse
     {
      /// <summary>
-   /// Gets or sets the card information.
-        /// </summary>
-        public CardResponse? Card { get; set; }
+   /// Gets or sets the card ID.
+   /// </summary>
+        public Guid Id { get; set; }
 
-        /// <summary>
-        /// Gets or sets the card balance.
+  /// <summary>
+        /// Gets or sets the full 16-digit card number.
         /// </summary>
-      public BalanceResponse? Balance { get; set; }
+       public string? CardNumber { get; set; }
 
-        /// <summary>
+     /// <summary>
+     /// Gets or sets the 3-digit CVV.
+        /// </summary>
+      public string? CVV { get; set; }
+
+     /// <summary>
+/// Gets or sets the card expiry date (MM/YY format).
+        /// </summary>
+        public string? ExpiryDateFormatted { get; set; }
+
+    /// <summary>
+        /// Gets or sets the cardholder name.
+        /// </summary>
+  public string? CardholderName { get; set; }
+
+    /// <summary>
+        /// Gets or sets the card nickname.
+   /// </summary>
+   public string? Nickname { get; set; }
+
+   /// <summary>
+        /// Gets or sets the card status.
+        /// </summary>
+   public string? Status { get; set; }
+
+   /// <summary>
+    /// Gets or sets the card type.
+        /// </summary>
+      public string? CardType { get; set; }
+
+  /// <summary>
+    /// Gets or sets the currency.
+   /// </summary>
+    public string? Currency { get; set; }
+
+/// <summary>
+     /// Gets or sets whether international transactions are allowed.
+    /// </summary>
+        public bool AllowInternational { get; set; }
+
+/// <summary>
+    /// Gets or sets the freeze reason.
+/// </summary>
+        public string? FreezeReason { get; set; }
+
+ /// <summary>
+  /// Gets or sets the frozen timestamp.
+        /// </summary>
+   public DateTime? FrozenAt { get; set; }
+
+  /// <summary>
+        /// Gets or sets the creation timestamp.
+  /// </summary>
+        public DateTime CreatedAt { get; set; }
+
+     /// <summary>
+     /// Gets or sets the last update timestamp.
+        /// </summary>
+    public DateTime UpdatedAt { get; set; }
+
+  /// <summary>
+      /// Gets or sets the card balance.
+    /// </summary>
+ public BalanceResponse? Balance { get; set; }
+
+  /// <summary>
         /// Gets or sets the card limits.
   /// </summary>
-        public List<CardLimitResponse> Limits { get; set; } = new List<CardLimitResponse>();
+    public List<CardLimitResponse> Limits { get; set; } = new List<CardLimitResponse>();
 
    /// <summary>
         /// Gets or sets the merchant restrictions.
-        /// </summary>
-        public List<MerchantRestrictionResponse> MerchantRestrictions { get; set; } = new List<MerchantRestrictionResponse>();
+     /// </summary>
+   public List<MerchantRestrictionResponse> MerchantRestrictions { get; set; } = new List<MerchantRestrictionResponse>();
 
-        /// <summary>
-        /// Gets or sets the recent transactions.
-        /// </summary>
-        public List<TransactionResponse> RecentTransactions { get; set; } = new List<TransactionResponse>();
+     /// <summary>
+   /// Gets or sets the recent transactions.
+    /// </summary>
+  public List<TransactionResponse> RecentTransactions { get; set; } = new List<TransactionResponse>();
     }
 
+    /// <summary>
+    /// DTO for viewing full card details including sensitive information.
+    /// Only Approvers (APP role) can view this information.
+    /// </summary>
+    public class CardFullDetailsResponse
+    {
+/// <summary>
+     /// Gets or sets the card ID.
+      /// </summary>
+        public Guid Id { get; set; }
+
+ /// <summary>
+        /// Gets or sets the full 16-digit card number.
+        /// </summary>
+       public string? CardNumber { get; set; }
+
+        /// <summary>
+     /// Gets or sets the 3-digit CVV.
+        /// </summary>
+        public string? CVV { get; set; }
+
+    /// <summary>
+     /// Gets or sets the card expiry date.
+        /// </summary>
+    public DateTime ExpiryDate { get; set; }
+
+/// <summary>
+        /// Gets or sets the cardholder name.
+      /// </summary>
+  public string? CardholderName { get; set; }
+
+  /// <summary>
+   /// Gets or sets the card status.
+  /// </summary>
+        public string? Status { get; set; }
+
+    /// <summary>
+        /// Gets or sets the card type.
+        /// </summary>
+        public string? CardType { get; set; }
+
+        /// <summary>
+     /// Gets or sets the currency.
+   /// </summary>
+        public string? Currency { get; set; }
+
+        /// <summary>
+  /// Gets or sets the creation timestamp.
+        /// </summary>
+    public DateTime CreatedAt { get; set; }
+}
     /// <summary>
     /// DTO for masking card number.
     /// </summary>
     public static class CardNumberMasking
     {
-        /// <summary>
+    /// <summary>
         /// Masks card number showing only last 4 digits.
-        /// </summary>
+      /// </summary>
         public static string MaskCardNumber(string cardNumber)
         {
       if (string.IsNullOrEmpty(cardNumber) || cardNumber.Length < 4)
   return cardNumber;
 
-            return $"****-****-****-{cardNumber.Substring(cardNumber.Length - 4)}";
+  return $"****-****-****-{cardNumber.Substring(cardNumber.Length - 4)}";
     }
     }
 }

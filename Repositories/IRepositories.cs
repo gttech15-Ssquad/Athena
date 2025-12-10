@@ -3,9 +3,41 @@ using virtupay_corporate.Models;
 namespace virtupay_corporate.Repositories
 {
     /// <summary>
+    /// Generic repository interface for common CRUD operations.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    public interface IRepository<T> where T : class
+    {
+        /// <summary>
+        /// Gets an entity by ID.
+        /// </summary>
+        Task<T?> GetByIdAsync(Guid id);
+
+        /// <summary>
+        /// Gets all entities.
+        /// </summary>
+        Task<List<T>> GetAllAsync();
+
+        /// <summary>
+        /// Creates a new entity.
+        /// </summary>
+        Task<T> CreateAsync(T entity);
+
+        /// <summary>
+        /// Updates an existing entity.
+        /// </summary>
+        Task<T> UpdateAsync(T entity);
+
+        /// <summary>
+        /// Deletes an entity.
+        /// </summary>
+        Task<bool> DeleteAsync(Guid id);
+    }
+
+    /// <summary>
     /// Repository interface for User operations.
     /// </summary>
-public interface IUserRepository
+    public interface IUserRepository
     {
         /// <summary>
         /// Gets a user by ID.
@@ -18,18 +50,23 @@ public interface IUserRepository
         Task<User?> GetByEmailAsync(string email);
 
      /// <summary>
-        /// Gets all active users with optional filtering.
+        /// Gets a user by account number.
+      /// </summary>
+ Task<User?> GetByAccountNumberAsync(string accountNumber);
+
+     /// <summary>
+   /// Gets all active users with optional filtering.
         /// </summary>
-        Task<List<User>> GetAllAsync(int? departmentId = null, string? role = null);
+    Task<List<User>> GetAllAsync(Guid? departmentId = null, string? role = null);
 
   /// <summary>
-        /// Creates a new user.
+    /// Creates a new user.
      /// </summary>
    Task<User> CreateAsync(User user);
 
         /// <summary>
-        /// Updates an existing user.
-        /// </summary>
+    /// Updates an existing user.
+     /// </summary>
         Task<User> UpdateAsync(User user);
 
         /// <summary>
@@ -39,19 +76,19 @@ public interface IUserRepository
 
         /// <summary>
         /// Gets paginated list of users.
-        /// </summary>
-        Task<(List<User> items, int total)> GetPaginatedAsync(int pageNumber, int pageSize);
+ /// </summary>
+    Task<(List<User> items, int total)> GetPaginatedAsync(int pageNumber, int pageSize);
     }
 
     /// <summary>
-    /// Repository interface for Department operations.
+ /// Repository interface for Department operations.
     /// </summary>
     public interface IDepartmentRepository
-    {
-        /// <summary>
+  {
+    /// <summary>
         /// Gets a department by ID.
         /// </summary>
-  Task<Department?> GetByIdAsync(int id);
+  Task<Department?> GetByIdAsync(Guid id);
 
 /// <summary>
      /// Gets all active departments.
@@ -61,35 +98,35 @@ public interface IUserRepository
   /// <summary>
         /// Creates a new department.
  /// </summary>
-        Task<Department> CreateAsync(Department department);
+  Task<Department> CreateAsync(Department department);
 
-    /// <summary>
+  /// <summary>
         /// Updates an existing department.
         /// </summary>
      Task<Department> UpdateAsync(Department department);
 
-   /// <summary>
-        /// Deletes a department (soft delete).
-     /// </summary>
-     Task<bool> DeleteAsync(int id);
+  /// <summary>
+  /// Deletes a department (soft delete).
+  /// </summary>
+     Task<bool> DeleteAsync(Guid id);
 
-        /// <summary>
-        /// Gets paginated list of departments.
+      /// <summary>
+    /// Gets paginated list of departments.
         /// </summary>
         Task<(List<Department> items, int total)> GetPaginatedAsync(int pageNumber, int pageSize);
   }
 
     /// <summary>
-    /// Repository interface for VirtualCard operations.
-    /// </summary>
+   /// Repository interface for VirtualCard operations.
+   /// </summary>
     public interface ICardRepository
     {
-        /// <summary>
+      /// <summary>
   /// Gets a card by ID.
-        /// </summary>
-        Task<VirtualCard?> GetByIdAsync(int id);
+   /// </summary>
+        Task<VirtualCard?> GetByIdAsync(Guid id);
 
-        /// <summary>
+ /// <summary>
         /// Gets a card by card number.
         /// </summary>
  Task<VirtualCard?> GetByCardNumberAsync(string cardNumber);
@@ -97,32 +134,32 @@ public interface IUserRepository
   /// <summary>
  /// Gets all cards for a specific user.
         /// </summary>
-        Task<List<VirtualCard>> GetByUserIdAsync(int userId);
+        Task<List<VirtualCard>> GetByUserIdAsync(Guid userId);
 
-        /// <summary>
+     /// <summary>
         /// Gets all active cards.
  /// </summary>
    Task<List<VirtualCard>> GetAllAsync();
 
    /// <summary>
   /// Creates a new virtual card.
-        /// </summary>
+     /// </summary>
    Task<VirtualCard> CreateAsync(VirtualCard card);
 
         /// <summary>
         /// Updates an existing card.
-        /// </summary>
+ /// </summary>
      Task<VirtualCard> UpdateAsync(VirtualCard card);
 
-        /// <summary>
-        /// Deletes a card (soft delete).
+     /// <summary>
+ /// Deletes a card (soft delete).
         /// </summary>
-        Task<bool> DeleteAsync(int id);
+        Task<bool> DeleteAsync(Guid id);
 
-        /// <summary>
+  /// <summary>
         /// Gets paginated list of cards for a user.
  /// </summary>
-        Task<(List<VirtualCard> items, int total)> GetPaginatedByUserIdAsync(int userId, int pageNumber, int pageSize);
+    Task<(List<VirtualCard> items, int total)> GetPaginatedByUserIdAsync(Guid userId, int pageNumber, int pageSize);
     }
 
     /// <summary>
@@ -130,66 +167,66 @@ public interface IUserRepository
     /// </summary>
     public interface ITransactionRepository
     {
-        /// <summary>
+     /// <summary>
         /// Gets a transaction by ID.
     /// </summary>
-   Task<CardTransaction?> GetByIdAsync(int id);
+   Task<CardTransaction?> GetByIdAsync(Guid id);
 
         /// <summary>
         /// Gets all transactions for a card.
-        /// </summary>
-        Task<List<CardTransaction>> GetByCardIdAsync(int cardId);
+   /// </summary>
+        Task<List<CardTransaction>> GetByCardIdAsync(Guid cardId);
 
         /// <summary>
-        /// Gets paginated transactions for a card.
-        /// </summary>
-        Task<(List<CardTransaction> items, int total)> GetPaginatedByCardIdAsync(int cardId, int pageNumber, int pageSize);
+    /// Gets paginated transactions for a card.
+      /// </summary>
+        Task<(List<CardTransaction> items, int total)> GetPaginatedByCardIdAsync(Guid cardId, int pageNumber, int pageSize);
 
-        /// <summary>
+    /// <summary>
         /// Creates a new transaction.
       /// </summary>
         Task<CardTransaction> CreateAsync(CardTransaction transaction);
 
    /// <summary>
-        /// Updates a transaction.
+ /// Updates a transaction.
         /// </summary>
  Task<CardTransaction> UpdateAsync(CardTransaction transaction);
 
   /// <summary>
         /// Gets transactions for a date range.
-        /// </summary>
-    Task<List<CardTransaction>> GetByDateRangeAsync(int cardId, DateTime startDate, DateTime endDate);
-    }
+    /// </summary>
+    Task<List<CardTransaction>> GetByDateRangeAsync(Guid cardId, DateTime startDate, DateTime endDate);
+ }
 
     /// <summary>
     /// Repository interface for CardApproval operations.
     /// </summary>
     public interface IApprovalRepository
 {
-        /// <summary>
-    /// Gets an approval by ID.
-        /// </summary>
-        Task<CardApproval?> GetByIdAsync(int id);
+    /// <summary>
+  /// Gets an approval by ID.
+  /// </summary>
+        Task<CardApproval?> GetByIdAsync(Guid id);
 
-        /// <summary>
+  /// <summary>
      /// Gets all pending approvals.
         /// </summary>
-        Task<List<CardApproval>> GetPendingAsync();
+  Task<List<CardApproval>> GetPendingAsync();
 
    /// <summary>
-        /// Gets approvals for a specific card.
+   /// Gets approvals for a specific card.
         /// </summary>
-        Task<List<CardApproval>> GetByCardIdAsync(int cardId);
+   Task<List<CardApproval>> GetByCardIdAsync(Guid cardId);
 
      /// <summary>
-        /// Gets paginated approvals with optional filtering.
+    /// Gets paginated approvals with optional filtering.
 /// </summary>
         Task<(List<CardApproval> items, int total)> GetPaginatedAsync(string? status = null, int pageNumber = 1, int pageSize = 20);
 
    /// <summary>
   /// Creates a new approval request.
-        /// </summary>
-        Task<CardApproval> CreateAsync(CardApproval approval);
+/// </summary>
+  Task<CardApproval> CreateAsync(CardApproval approval);
 
       /// <summary>
  /// Updates an approval.
@@ -198,39 +235,39 @@ public interface IUserRepository
     }
 
     /// <summary>
-    /// Repository interface for AuditLog operations.
+  /// Repository interface for AuditLog operations.
     /// </summary>
-    public interface IAuditLogRepository
+public interface IAuditLogRepository
     {
  /// <summary>
-        /// Gets an audit log by ID.
-        /// </summary>
-   Task<AuditLog?> GetByIdAsync(int id);
+  /// Gets an audit log by ID.
+    /// </summary>
+   Task<AuditLog?> GetByIdAsync(Guid id);
 
         /// <summary>
-        /// Gets audit logs for a resource.
+  /// Gets audit logs for a resource.
         /// </summary>
- Task<List<AuditLog>> GetByResourceAsync(string resource, int? resourceId = null);
+ Task<List<AuditLog>> GetByResourceAsync(string resource, Guid? resourceId = null);
 
       /// <summary>
         /// Gets paginated audit logs with optional filtering.
         /// </summary>
         Task<(List<AuditLog> items, int total)> GetPaginatedAsync(
-            int pageNumber = 1,
+      int pageNumber = 1,
   int pageSize = 20,
             string? action = null,
  string? resource = null,
-            DateTime? startDate = null,
-            DateTime? endDate = null);
+         DateTime? startDate = null,
+     DateTime? endDate = null);
 
         /// <summary>
-        /// Creates a new audit log entry.
+    /// Creates a new audit log entry.
         /// </summary>
-    Task<AuditLog> CreateAsync(AuditLog auditLog);
+   Task<AuditLog> CreateAsync(AuditLog auditLog);
 
-        /// <summary>
+   /// <summary>
     /// Gets audit logs for a specific user.
       /// </summary>
-        Task<List<AuditLog>> GetByUserIdAsync(int userId);
+        Task<List<AuditLog>> GetByUserIdAsync(Guid userId);
     }
 }

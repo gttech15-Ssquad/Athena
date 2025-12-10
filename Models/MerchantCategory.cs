@@ -5,14 +5,14 @@ namespace virtupay_corporate.Models
     /// </summary>
     public class MerchantCategory
     {
-        /// <summary>
-        /// Gets or sets the unique identifier.
+  /// <summary>
+    /// Gets or sets the unique identifier.
         /// </summary>
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
     /// <summary>
-      /// Gets or sets the category name (e.g., "Gas Stations", "Hotels").
-        /// </summary>
+ /// Gets or sets the category name (e.g., "Gas Stations", "Hotels").
+  /// </summary>
         public required string Name { get; set; }
 
         /// <summary>
@@ -28,6 +28,6 @@ namespace virtupay_corporate.Models
       /// <summary>
         /// Gets or sets the creation timestamp.
    /// </summary>
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+   public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
