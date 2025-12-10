@@ -20,12 +20,18 @@ namespace virtupay_corporate.Controllers
     {
         private readonly IAuthService _authService;
         private readonly IJwtTokenHelper _jwtTokenHelper;
+        private readonly IOrganizationService _organizationService;
         private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IAuthService authService, IJwtTokenHelper jwtTokenHelper, ILogger<AuthController> logger)
+        public AuthController(
+            IAuthService authService, 
+            IJwtTokenHelper jwtTokenHelper,
+            IOrganizationService organizationService,
+            ILogger<AuthController> logger)
         {
        _authService = authService;
             _jwtTokenHelper = jwtTokenHelper;
+            _organizationService = organizationService;
      _logger = logger;
         }
 
@@ -65,34 +71,40 @@ namespace virtupay_corporate.Controllers
      });
       }
 
-       var user = await _authService.RegisterAsync(
+       var result = await _authService.RegisterAsync(
          request.Email, 
      request.Password, 
    request.Role,  // ? Use selected role (APP or VIEW)
+         request.OrganizationName,
 request.FirstName, 
-    request.LastName, 
-          null);  // No department required
+    request.LastName,
+         request.Industry);
 
-          if (user == null)
+          if (result == null)
     return BadRequest(new ErrorResponse
  {
      Code = "REGISTRATION_FAILED",
         Message = "Failed to register user"
      });
 
-      // Generate token
-          var token = _jwtTokenHelper.GenerateToken(user.Id, user.Email, user.Role);
+      var (user, organization, membership) = result.Value;
+
+      // Generate token with organization context
+          var token = _jwtTokenHelper.GenerateToken(user.Id, user.Email, membership.OrgRole, organization.Id, membership.Id);
 
        var response = new AuthResponse
         {
     Token = token,
          ExpiresAt = DateTime.UtcNow.AddMinutes(1440),
+         OrganizationId = organization.Id,
+         OrgRole = membership.OrgRole,
+         MembershipId = membership.Id,
  User = new UserResponse
     {
      Id = user.Id,
       Email = user.Email,
    AccountNumber = user.AccountNumber,
-   Role = user.Role,
+   Role = membership.OrgRole, // Use org role instead of global role
          FirstName = user.FirstName,
         LastName = user.LastName,
          Status = user.Status,
@@ -100,7 +112,7 @@ request.FirstName,
          }
         };
 
-     _logger.LogInformation("User registered successfully: {Email}, AccountNumber: {AccountNumber}", request.Email, user.AccountNumber);
+     _logger.LogInformation("User registered successfully: {Email}, AccountNumber: {AccountNumber}, Organization: {OrgName}", request.Email, user.AccountNumber, organization.Name);
           return CreatedAtAction(nameof(Register), response);
        }
    catch (Exception ex)
@@ -139,9 +151,9 @@ try
          Message = "Validation failed"
             });
 
-          var token = await _authService.LoginAsync(request.Email, request.Password);
+          var loginResult = await _authService.LoginAsync(request.Email, request.Password);
 
-      if (string.IsNullOrEmpty(token))
+      if (loginResult == null)
         {
    _logger.LogWarning("Login attempt failed for: {Email}", request.Email);
       return Unauthorized(new ErrorResponse
@@ -151,6 +163,7 @@ Code = "INVALID_CREDENTIALS",
      });
            }
 
+      var (token, organizationId, membershipId, orgRole) = loginResult.Value;
       var user = await _authService.GetUserAsync(int.Parse(_jwtTokenHelper.ExtractUserId(token)?.ToString() ?? "0"));
 
       if (user == null)
@@ -164,12 +177,15 @@ Code = "INVALID_CREDENTIALS",
       {
      Token = token,
            ExpiresAt = DateTime.UtcNow.AddMinutes(1440),
+         OrganizationId = organizationId,
+         OrgRole = orgRole,
+         MembershipId = membershipId,
           User = new UserResponse
    {
  Id = user.Id,
       Email = user.Email,
    AccountNumber = user.AccountNumber,
-   Role = user.Role,
+   Role = orgRole ?? user.Role,
         FirstName = user.FirstName,
     LastName = user.LastName,
          Status = user.Status,

@@ -1,7 +1,7 @@
 namespace virtupay_corporate.Models
 {
     /// <summary>
-    /// Represents a department in the organization.
+    /// Represents a department in an organization.
     /// </summary>
     public class Department
     {
@@ -15,9 +15,12 @@ namespace virtupay_corporate.Models
         /// </summary>
         public required string Name { get; set; }
 
+        public Guid OrganizationId { get; set; }
+        public Organization? Organization { get; set; }
+
         /// <summary>
         /// Gets or sets the department status (Active, Inactive).
- /// </summary>
+        /// </summary>
         public required string Status { get; set; } = "Active";
 
         /// <summary>

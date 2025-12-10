@@ -10,15 +10,20 @@ namespace virtupay_corporate.Models
   /// </summary>
         public Guid Id { get; set; } = Guid.NewGuid();
 
-   /// <summary>
-    /// Gets or sets the user ID (card owner).
-     /// </summary>
-     public Guid UserId { get; set; }
+        public Guid OrganizationId { get; set; }
+        public Organization? Organization { get; set; }
 
         /// <summary>
-        /// Gets or sets the user navigation property.
+        /// Owner membership within the organization (who requested/owns the card).
         /// </summary>
-        public User? User { get; set; }
+        public Guid OwnerMembershipId { get; set; }
+        public OrganizationUser? OwnerMembership { get; set; }
+
+        /// <summary>
+        /// Backward compatibility: UserId for migration period.
+        /// Maps to OwnerMembership.UserId when OwnerMembership is loaded.
+        /// </summary>
+        public Guid? UserId { get; set; }
 
   /// <summary>
     /// Gets or sets the unique 16-digit card number.

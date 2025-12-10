@@ -18,19 +18,12 @@ namespace virtupay_corporate.Data
 
      #region DbSets
 
-        /// <summary>
-   /// Gets or sets the Users DbSet.
- /// </summary>
-    public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Organization> Organizations { get; set; } = null!;
+        public DbSet<OrganizationUser> OrganizationUsers { get; set; } = null!;
+        public DbSet<User> Users { get; set; } = null!;
 
-     /// <summary>
-/// Gets or sets the Departments DbSet.
-   /// </summary>
         public DbSet<Department> Departments { get; set; } = null!;
 
- /// <summary>
-        /// Gets or sets the VirtualCards DbSet.
-        /// </summary>
         public DbSet<VirtualCard> VirtualCards { get; set; } = null!;
 
         /// <summary>
@@ -68,10 +61,7 @@ namespace virtupay_corporate.Data
         /// </summary>
  public DbSet<AuditLog> AuditLogs { get; set; } = null!;
 
-     /// <summary>
-      /// Gets or sets the AccountBalances DbSet.
-        /// </summary>
- public DbSet<AccountBalance> AccountBalances { get; set; } = null!;
+        public DbSet<AccountBalance> AccountBalances { get; set; } = null!;
 
         /// <summary>
     /// Gets or sets the AccountTransactions DbSet.
@@ -87,40 +77,60 @@ namespace virtupay_corporate.Data
         {
           base.OnModelCreating(modelBuilder);
 
-      // User configuration
- modelBuilder.Entity<User>(entity =>
-        {
-    entity.HasKey(e => e.Id);
-         entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
-  entity.Property(e => e.PasswordHash).IsRequired().HasMaxLength(500);
-   entity.Property(e => e.Role).IsRequired().HasMaxLength(50);
-          entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
-     entity.HasIndex(e => e.Email).IsUnique();
-entity.HasOne(e => e.Department).WithMany(d => d.Users).HasForeignKey(e => e.DepartmentId);
-});
+            // Organization configuration
+            modelBuilder.Entity<Organization>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+            });
 
-      // Department configuration
-    modelBuilder.Entity<Department>(entity =>
-        {
-     entity.HasKey(e => e.Id);
-    entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
-           entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
-  entity.Property(e => e.Budget).HasPrecision(18, 2);
-         });
+            // OrganizationUser configuration
+            modelBuilder.Entity<OrganizationUser>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.OrgRole).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+                entity.HasIndex(e => new { e.OrganizationId, e.UserId }).IsUnique();
+                entity.HasOne(e => e.Organization).WithMany(o => o.Members).HasForeignKey(e => e.OrganizationId);
+                entity.HasOne(e => e.User).WithMany(u => u.Memberships).HasForeignKey(e => e.UserId);
+            });
 
-     // VirtualCard configuration
-        modelBuilder.Entity<VirtualCard>(entity =>
-   {
-       entity.HasKey(e => e.Id);
-  entity.Property(e => e.CardNumber).IsRequired().HasMaxLength(19);
- entity.Property(e => e.CVV).IsRequired().HasMaxLength(10);
-entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
-     entity.Property(e => e.CardholderName).IsRequired().HasMaxLength(255);
-     entity.Property(e => e.Currency).IsRequired().HasMaxLength(3);
-    entity.HasIndex(e => e.CardNumber).IsUnique();
-     entity.HasOne(e => e.User).WithMany(u => u.VirtualCards).HasForeignKey(e => e.UserId);
-      entity.HasOne(e => e.CardBalance).WithOne(b => b.VirtualCard).HasForeignKey<CardBalance>(b => b.CardId);
-        });
+            // User configuration
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.PasswordHash).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.GlobalStatus).IsRequired().HasMaxLength(50);
+                entity.HasIndex(e => e.Email).IsUnique();
+                entity.HasOne(e => e.Department).WithMany(d => d.Users).HasForeignKey(e => e.DepartmentId);
+            });
+
+            // Department configuration
+            modelBuilder.Entity<Department>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Budget).HasPrecision(18, 2);
+                entity.HasOne(e => e.Organization).WithMany(o => o.Departments).HasForeignKey(e => e.OrganizationId);
+            });
+
+            // VirtualCard configuration
+            modelBuilder.Entity<VirtualCard>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.CardNumber).IsRequired().HasMaxLength(19);
+                entity.Property(e => e.CVV).IsRequired().HasMaxLength(10);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.CardholderName).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.Currency).IsRequired().HasMaxLength(3);
+                entity.HasIndex(e => e.CardNumber).IsUnique();
+                entity.HasOne(e => e.Organization).WithMany().HasForeignKey(e => e.OrganizationId);
+                entity.HasOne(e => e.OwnerMembership).WithMany().HasForeignKey(e => e.OwnerMembershipId);
+                entity.HasOne(e => e.CardBalance).WithOne(b => b.VirtualCard).HasForeignKey<CardBalance>(b => b.CardId);
+            });
 
    // CardLimit configuration
             modelBuilder.Entity<CardLimit>(entity =>
@@ -161,17 +171,17 @@ entity.HasOne(e => e.VirtualCard).WithMany(c => c.CardLimits).HasForeignKey(e =>
        entity.HasOne(e => e.VirtualCard).WithMany(c => c.Transactions).HasForeignKey(e => e.CardId);
             });
 
-      // CardApproval configuration
-    modelBuilder.Entity<CardApproval>(entity =>
+            // CardApproval configuration
+            modelBuilder.Entity<CardApproval>(entity =>
             {
-      entity.HasKey(e => e.Id);
-    entity.Property(e => e.ActionType).IsRequired().HasMaxLength(100);
-       entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
-      entity.Property(e => e.Reason).HasMaxLength(500);
-       entity.HasOne(e => e.VirtualCard).WithMany(c => c.Approvals).HasForeignKey(e => e.CardId);
-    entity.HasOne(e => e.RequestedByUser).WithMany().HasForeignKey(e => e.RequestedBy);
-    entity.HasOne(e => e.ApprovedByUser).WithMany().HasForeignKey(e => e.ApprovedBy);
- });
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.ActionType).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Reason).HasMaxLength(500);
+                entity.HasOne(e => e.VirtualCard).WithMany(c => c.Approvals).HasForeignKey(e => e.CardId);
+                entity.HasOne(e => e.RequestedByMembership).WithMany().HasForeignKey(e => e.RequestedByMembershipId);
+                entity.HasOne(e => e.ApprovedByMembership).WithMany().HasForeignKey(e => e.ApprovedByMembershipId);
+            });
 
           // CardBalance configuration
      modelBuilder.Entity<CardBalance>(entity =>
@@ -197,16 +207,18 @@ entity.HasOne(e => e.VirtualCard).WithMany(c => c.CardLimits).HasForeignKey(e =>
       // Add unique constraint for email
  modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
 
-      // AccountBalance configuration
-      modelBuilder.Entity<AccountBalance>(entity =>
-      {
-    entity.HasKey(e => e.Id);
-    entity.Property(e => e.AvailableBalance).HasPrecision(18, 2);
-entity.Property(e => e.TotalFunded).HasPrecision(18, 2);
-    entity.Property(e => e.TotalWithdrawn).HasPrecision(18, 2);
- entity.Property(e => e.Currency).IsRequired().HasMaxLength(3);
-         entity.HasOne(e => e.User).WithOne(u => u.AccountBalance).HasForeignKey<AccountBalance>(a => a.UserId);
-  });
+            // AccountBalance configuration
+            modelBuilder.Entity<AccountBalance>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.AvailableBalance).HasPrecision(18, 2);
+                entity.Property(e => e.TotalFunded).HasPrecision(18, 2);
+                entity.Property(e => e.TotalWithdrawn).HasPrecision(18, 2);
+                entity.Property(e => e.Currency).IsRequired().HasMaxLength(3);
+                entity.HasOne(e => e.Organization).WithMany().HasForeignKey(e => e.OrganizationId);
+                entity.HasOne(e => e.User).WithOne(u => u.AccountBalance).HasForeignKey<AccountBalance>(a => a.UserId);
+                entity.HasOne(e => e.OrganizationUser).WithMany().HasForeignKey(e => e.OrganizationUserId);
+            });
 
         // AccountTransaction configuration
  modelBuilder.Entity<AccountTransaction>(entity =>

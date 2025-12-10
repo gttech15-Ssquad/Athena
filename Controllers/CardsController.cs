@@ -66,16 +66,16 @@ _cardService = cardService;
     if (!ModelState.IsValid)
    return BadRequest(ModelState);
 
-   var userId = GetUserId();
-    if (!userId.HasValue)
+   var (organizationId, membershipId) = GetOrganizationContext();
+    if (!organizationId.HasValue || !membershipId.HasValue)
           return Unauthorized();
 
-     var card = await _cardService.CreateCardAsync(userId.Value, request.CardholderName, request.Nickname, request.DepartmentId);
+     var card = await _cardService.CreateCardAsync(organizationId.Value, membershipId.Value, request.CardholderName, request.Nickname, request.DepartmentId);
 
          if (card == null)
         return BadRequest(new ErrorResponse { Code = "CARD_CREATION_FAILED", Message = "Failed to create card" });
 
-_logger.LogInformation("Card created for user {UserId}", userId);
+_logger.LogInformation("Card created for organization {OrgId}, membership {MembershipId}", organizationId, membershipId);
 
        return CreatedAtAction(nameof(GetCard), new { cardId = card.Id }, MapCardToResponse(card));
          }
@@ -102,7 +102,11 @@ return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
   if (!userId.HasValue)
       return Unauthorized();
 
-    var (cards, total) = await _cardService.GetUserCardsPaginatedAsync(userId.Value, pageNumber, pageSize);
+            var (organizationId, membershipId) = GetOrganizationContext();
+            if (!organizationId.HasValue)
+                return Unauthorized();
+
+            var (cards, total) = await _cardService.GetOrganizationCardsPaginatedAsync(organizationId.Value, pageNumber, pageSize);
 
           var response = new PaginatedResponse<CardResponse>
        {
@@ -265,7 +269,11 @@ if (userRole != "APP")
           return Forbid();
      }
 
-       var result = await _cardService.FreezeCardAsync(cardId, request.Reason);
+            var (organizationId, membershipId) = GetOrganizationContext();
+            if (!membershipId.HasValue)
+                return Unauthorized();
+
+            var result = await _cardService.FreezeCardAsync(cardId, request.Reason, membershipId.Value);
     if (!result)
   return NotFound(new ErrorResponse { Code = "CARD_NOT_FOUND", Message = "Card not found" });
 
@@ -303,7 +311,11 @@ if (userRole != "APP")
    return Forbid();
      }
 
-     var result = await _cardService.UnfreezeCardAsync(cardId);
+            var (organizationId, membershipId) = GetOrganizationContext();
+            if (!membershipId.HasValue)
+                return Unauthorized();
+
+            var result = await _cardService.UnfreezeCardAsync(cardId, membershipId.Value);
  if (!result)
 return NotFound(new ErrorResponse { Code = "CARD_NOT_FOUND", Message = "Card not found" });
 
@@ -341,7 +353,11 @@ _logger.LogError(ex, "Error unfreezing card");
     return Forbid();
      }
 
-   var result = await _cardService.CancelCardAsync(cardId);
+            var (organizationId, membershipId) = GetOrganizationContext();
+            if (!membershipId.HasValue)
+                return Unauthorized();
+
+            var result = await _cardService.CancelCardAsync(cardId, membershipId.Value);
    if (!result)
     return NotFound(new ErrorResponse { Code = "CARD_NOT_FOUND", Message = "Card not found" });
 
@@ -569,5 +585,19 @@ CardType = card.CardType,
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             return userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId) ? userId : null;
   }
+
+        /// <summary>
+        /// Gets organization context from JWT claims.
+        /// </summary>
+        private (Guid? organizationId, Guid? membershipId) GetOrganizationContext()
+        {
+            var orgIdClaim = User.FindFirst("orgId");
+            var membershipIdClaim = User.FindFirst("membershipId");
+            
+            Guid? orgId = orgIdClaim != null && Guid.TryParse(orgIdClaim.Value, out var oid) ? oid : null;
+            Guid? membershipId = membershipIdClaim != null && Guid.TryParse(membershipIdClaim.Value, out var mid) ? mid : null;
+            
+            return (orgId, membershipId);
+        }
     }
 }

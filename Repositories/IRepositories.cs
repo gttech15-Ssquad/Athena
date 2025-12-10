@@ -136,6 +136,11 @@ namespace virtupay_corporate.Repositories
         /// </summary>
         Task<List<VirtualCard>> GetByUserIdAsync(Guid userId);
 
+        /// <summary>
+        /// Gets all cards for an organization.
+        /// </summary>
+        Task<List<VirtualCard>> GetByOrganizationIdAsync(Guid organizationId);
+
      /// <summary>
         /// Gets all active cards.
  /// </summary>
@@ -265,9 +270,86 @@ public interface IAuditLogRepository
         /// </summary>
    Task<AuditLog> CreateAsync(AuditLog auditLog);
 
-   /// <summary>
+        /// <summary>
     /// Gets audit logs for a specific user.
       /// </summary>
         Task<List<AuditLog>> GetByUserIdAsync(Guid userId);
+    }
+
+    /// <summary>
+    /// Repository interface for Organization operations.
+    /// </summary>
+    public interface IOrganizationRepository
+    {
+        /// <summary>
+        /// Gets an organization by ID.
+        /// </summary>
+        Task<Organization?> GetByIdAsync(Guid id);
+
+        /// <summary>
+        /// Gets an organization by name.
+        /// </summary>
+        Task<Organization?> GetByNameAsync(string name);
+
+        /// <summary>
+        /// Gets all organizations.
+        /// </summary>
+        Task<List<Organization>> GetAllAsync();
+
+        /// <summary>
+        /// Creates a new organization.
+        /// </summary>
+        Task<Organization> CreateAsync(Organization organization);
+
+        /// <summary>
+        /// Updates an existing organization.
+        /// </summary>
+        Task<Organization> UpdateAsync(Organization organization);
+
+        /// <summary>
+        /// Gets paginated list of organizations.
+        /// </summary>
+        Task<(List<Organization> items, int total)> GetPaginatedAsync(int pageNumber, int pageSize);
+    }
+
+    /// <summary>
+    /// Repository interface for OrganizationUser operations.
+    /// </summary>
+    public interface IOrganizationUserRepository
+    {
+        /// <summary>
+        /// Gets an organization membership by ID.
+        /// </summary>
+        Task<OrganizationUser?> GetByIdAsync(Guid id);
+
+        /// <summary>
+        /// Gets a membership by organization and user IDs.
+        /// </summary>
+        Task<OrganizationUser?> GetByOrganizationAndUserAsync(Guid organizationId, Guid userId);
+
+        /// <summary>
+        /// Gets all memberships for an organization.
+        /// </summary>
+        Task<List<OrganizationUser>> GetByOrganizationIdAsync(Guid organizationId);
+
+        /// <summary>
+        /// Gets all memberships for a user.
+        /// </summary>
+        Task<List<OrganizationUser>> GetByUserIdAsync(Guid userId);
+
+        /// <summary>
+        /// Creates a new membership.
+        /// </summary>
+        Task<OrganizationUser> CreateAsync(OrganizationUser membership);
+
+        /// <summary>
+        /// Updates an existing membership.
+        /// </summary>
+        Task<OrganizationUser> UpdateAsync(OrganizationUser membership);
+
+        /// <summary>
+        /// Gets members with a specific role in an organization.
+        /// </summary>
+        Task<List<OrganizationUser>> GetByOrganizationAndRoleAsync(Guid organizationId, string role);
     }
 }

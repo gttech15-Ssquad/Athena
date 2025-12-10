@@ -37,6 +37,19 @@ namespace virtupay_corporate.DTOs
         /// Gets or sets the last name.
     /// </summary>
         public string? LastName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the organization name (required for new organization creation).
+        /// </summary>
+        [Required(ErrorMessage = "Organization name is required")]
+        [MaxLength(255, ErrorMessage = "Organization name cannot exceed 255 characters")]
+        public required string OrganizationName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the organization industry (optional).
+        /// </summary>
+        [MaxLength(100, ErrorMessage = "Industry cannot exceed 100 characters")]
+        public string? Industry { get; set; }
     }
 
     /// <summary>
@@ -71,6 +84,21 @@ namespace virtupay_corporate.DTOs
         /// Gets or sets the token expiration time.
         /// </summary>
       public DateTime ExpiresAt { get; set; }
+
+        /// <summary>
+        /// Gets or sets the organization ID.
+        /// </summary>
+        public Guid? OrganizationId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the organization role.
+        /// </summary>
+        public string? OrgRole { get; set; }
+
+        /// <summary>
+        /// Gets or sets the membership ID.
+        /// </summary>
+        public Guid? MembershipId { get; set; }
 
     /// <summary>
    /// Gets or sets the user information.
@@ -193,7 +221,7 @@ namespace virtupay_corporate.DTOs
 
       /// <summary>
         /// Gets or sets the page number.
-       /// </summary>
+        /// </summary>
     public int PageNumber { get; set; }
 
      /// <summary>
@@ -215,5 +243,32 @@ namespace virtupay_corporate.DTOs
         /// Gets a value indicating whether there is a previous page.
 /// </summary>
       public bool HasPreviousPage => PageNumber > 1;
+    }
+
+    /// <summary>
+    /// DTO for switching organization context.
+    /// </summary>
+    public class SwitchOrganizationRequest
+    {
+        /// <summary>
+        /// Gets or sets the organization ID to switch to.
+        /// </summary>
+        [Required(ErrorMessage = "Organization ID is required")]
+        public Guid OrganizationId { get; set; }
+    }
+
+    /// <summary>
+    /// DTO for organization member response.
+    /// </summary>
+    public class OrganizationMemberResponse
+    {
+        public Guid Id { get; set; }
+        public Guid UserId { get; set; }
+        public string? UserEmail { get; set; }
+        public string? UserFirstName { get; set; }
+        public string? UserLastName { get; set; }
+        public string OrgRole { get; set; } = string.Empty;
+        public string Status { get; set; } = "Active";
+        public DateTime CreatedAt { get; set; }
     }
 }

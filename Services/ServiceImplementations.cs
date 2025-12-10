@@ -15,6 +15,7 @@ namespace virtupay_corporate.Services
         private readonly IAuditService _auditService;
       private readonly IHttpContextAccessor _httpContextAccessor;
  private readonly IRepository<AccountBalance> _accountBalanceRepository;
+        private readonly IOrganizationService _organizationService;
 
   public AuthService(
      IUserRepository userRepository,
@@ -22,7 +23,8 @@ namespace virtupay_corporate.Services
    IJwtTokenHelper jwtTokenHelper,
    IAuditService auditService,
          IHttpContextAccessor httpContextAccessor,
-     IRepository<AccountBalance> accountBalanceRepository)
+     IRepository<AccountBalance> accountBalanceRepository,
+            IOrganizationService organizationService)
         {
 _userRepository = userRepository;
             _passwordHasher = passwordHasher;
@@ -30,9 +32,10 @@ _userRepository = userRepository;
             _auditService = auditService;
    _httpContextAccessor = httpContextAccessor;
 _accountBalanceRepository = accountBalanceRepository;
+            _organizationService = organizationService;
     }
 
-        public async Task<User?> RegisterAsync(string email, string password, string role, string? firstName = null, string? lastName = null, int? departmentId = null)
+        public async Task<(User user, Organization organization, OrganizationUser membership)?> RegisterAsync(string email, string password, string role, string organizationName, string? firstName = null, string? lastName = null, string? industry = null)
       {
       // Check if user already exists
             if (await _userRepository.GetByEmailAsync(email) != null)
@@ -60,10 +63,15 @@ _accountBalanceRepository = accountBalanceRepository;
 
   await _userRepository.CreateAsync(user);
 
-  // Create AccountBalance for the user
+  // Create organization with user as Owner
+        var (organization, membership) = await _organizationService.CreateOrganizationAsync(organizationName, user.Id, industry);
+
+  // Create AccountBalance for the organization
      var accountBalance = new AccountBalance
   {
-         UserId = user.Id,
+         OrganizationId = organization.Id,
+         UserId = user.Id, // Optional: user-specific balance
+         OrganizationUserId = membership.Id,
        AvailableBalance = 0,
   TotalFunded = 0,
 TotalWithdrawn = 0,
@@ -75,9 +83,9 @@ TotalWithdrawn = 0,
     await _accountBalanceRepository.CreateAsync(accountBalance);
 
   var ipAddress = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
-   await _auditService.LogActionAsync(user.Id, "USER_REGISTERED", "User", user.Id, $"Role: {role}", ipAddress, null);
+   await _auditService.LogActionAsync(user.Id, "USER_REGISTERED", "User", user.Id, $"Role: {role}, Organization: {organizationName}", ipAddress, null);
 
-   return user;
+   return (user, organization, membership);
       }
 
  private async Task<string> GenerateUniqueAccountNumber()
@@ -96,7 +104,7 @@ TotalWithdrawn = 0,
   return accountNumber;
         }
 
-        public async Task<string?> LoginAsync(string email, string password)
+        public async Task<(string token, Guid? organizationId, Guid? membershipId, string? orgRole)?> LoginAsync(string email, string password)
       {
             var user = await _userRepository.GetByEmailAsync(email);
 
@@ -106,12 +114,26 @@ TotalWithdrawn = 0,
      if (user.Status != "Active")
             return null;
 
-       var token = _jwtTokenHelper.GenerateToken(user.Id, user.Email, user.Role);
+            // Get user's first active organization membership
+            var organizations = await _organizationService.GetUserOrganizationsAsync(user.Id);
+            var firstOrg = organizations.FirstOrDefault();
+            OrganizationUser? membership = null;
+            
+            if (firstOrg != null)
+            {
+                membership = await _organizationService.GetMembershipAsync(firstOrg.Id, user.Id);
+            }
+
+            Guid? orgId = membership?.OrganizationId;
+            Guid? membershipId = membership?.Id;
+            string? orgRole = membership?.OrgRole ?? user.Role;
+
+       var token = _jwtTokenHelper.GenerateToken(user.Id, user.Email, orgRole, orgId, membershipId);
 
             var ipAddress = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
-      await _auditService.LogActionAsync(user.Id, "USER_LOGIN", "User", user.Id, null, ipAddress, null);
+      await _auditService.LogActionAsync(user.Id, "USER_LOGIN", "User", user.Id, $"Organization: {orgId}", ipAddress, null);
 
- return token;
+ return (token, orgId, membershipId, orgRole);
    }
 
         public async Task<bool> UserExistsAsync(string email)

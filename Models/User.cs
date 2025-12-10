@@ -1,14 +1,11 @@
 namespace virtupay_corporate.Models
 {
     /// <summary>
-    /// Represents a user in the system.
+    /// Represents an identity that can belong to one or more organizations.
     /// </summary>
     public class User
     {
-     /// <summary>
-      /// Gets or sets the unique identifier for the user.
-        /// </summary>
-     public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
         /// Gets or sets the user's email address.
@@ -21,20 +18,24 @@ namespace virtupay_corporate.Models
         public required string PasswordHash { get; set; }
 
         /// <summary>
-    /// Gets or sets the unique 10-digit account number for the user.
-        /// This is the main account identifier for balance tracking.
+        /// Gets or sets the unique 10-digit account number for the user (legacy compatibility).
         /// </summary>
-      public string? AccountNumber { get; set; }
-
-  /// <summary>
-  /// Gets or sets the user's role (CEO, CFO, Admin, Delegate, Auditor).
-        /// </summary>
- public required string Role { get; set; }
+        public string? AccountNumber { get; set; }
 
         /// <summary>
-    /// Gets or sets the user's status (Active, Inactive, Suspended).
-   /// </summary>
-public required string Status { get; set; } = "Active";
+        /// Global status of the identity (Active, Suspended). Org-specific status lives on OrganizationUser.
+        /// </summary>
+        public string GlobalStatus { get; set; } = "Active";
+
+        /// <summary>
+        /// Backward compatibility shim for existing code paths expecting a Role/Status on User.
+        /// </summary>
+        public string Role { get; set; } = "Viewer";
+        public string Status
+        {
+            get => GlobalStatus;
+            set => GlobalStatus = value;
+        }
 
     /// <summary>
         /// Gets or sets the user's first name.
@@ -71,14 +72,19 @@ public required string Status { get; set; } = "Active";
      /// </summary>
         public bool IsDeleted { get; set; }
 
-      /// <summary>
-        /// Gets or sets the virtual cards owned by this user.
-      /// </summary>
-     public ICollection<VirtualCard> VirtualCards { get; set; } = new List<VirtualCard>();
+        /// <summary>
+        /// Organization memberships with org-scoped roles.
+        /// </summary>
+        public ICollection<OrganizationUser> Memberships { get; set; } = new List<OrganizationUser>();
 
-     /// <summary>
-      /// Gets or sets the main account balance for this user.
- /// </summary>
- public AccountBalance? AccountBalance { get; set; }
+        /// <summary>
+        /// Legacy direct cards list is removed; cards are owned via OrganizationUser (OwnerMembershipId).
+        /// </summary>
+        public ICollection<VirtualCard> VirtualCards { get; set; } = new List<VirtualCard>();
+
+        /// <summary>
+        /// Optional personal account balance; org-level balances are keyed by OrganizationId.
+        /// </summary>
+        public AccountBalance? AccountBalance { get; set; }
     }
 }

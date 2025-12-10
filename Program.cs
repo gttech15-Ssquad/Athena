@@ -140,8 +140,12 @@ return Task.CompletedTask;
    };
         });
 
-    // Configure Authorization
-    builder.Services.AddAuthorization();
+    // Configure Authorization with organization-scoped role policies
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("OrgRoleApprover", policy => policy.RequireRole("Approver", "Admin", "Owner"));
+        options.AddPolicy("OrgRoleAdmin", policy => policy.RequireRole("Admin", "Owner"));
+    });
 
  // Configure CORS
     builder.Services.AddCors(options =>
@@ -161,6 +165,8 @@ return Task.CompletedTask;
     builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
     builder.Services.AddScoped<IApprovalRepository, ApprovalRepository>();
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+    builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+    builder.Services.AddScoped<IOrganizationUserRepository, OrganizationUserRepository>();
     builder.Services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
 
     // Register services
@@ -173,6 +179,7 @@ return Task.CompletedTask;
     builder.Services.AddScoped<IAuditService, AuditService>();
  builder.Services.AddScoped<INotificationService, NotificationServiceImpl>();
     builder.Services.AddScoped<IAccountBalanceService, AccountBalanceServiceImpl>();
+    builder.Services.AddScoped<IOrganizationService, OrganizationServiceImpl>();
 
     // Register helpers
     builder.Services.AddSingleton<IJwtTokenHelper>(new JwtTokenHelper(jwtSecret, jwtIssuer, jwtAudience));

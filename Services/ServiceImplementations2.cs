@@ -12,29 +12,47 @@ namespace virtupay_corporate.Services
   private readonly ICardRepository _cardRepository;
         private readonly IAuditService _auditService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IOrganizationService _organizationService;
+        private readonly IOrganizationUserRepository _organizationUserRepository;
 
-     public CardServiceImpl(ICardRepository cardRepository, IAuditService auditService, IHttpContextAccessor httpContextAccessor)
+     public CardServiceImpl(
+            ICardRepository cardRepository, 
+            IAuditService auditService, 
+            IHttpContextAccessor httpContextAccessor,
+            IOrganizationService organizationService,
+            IOrganizationUserRepository organizationUserRepository)
     {
        _cardRepository = cardRepository;
     _auditService = auditService;
 _httpContextAccessor = httpContextAccessor;
+            _organizationService = organizationService;
+            _organizationUserRepository = organizationUserRepository;
         }
 
-     public async Task<VirtualCard?> CreateCardAsync(Guid userId, string cardholderName, string? nickname = null, Guid? departmentId = null)
+     public async Task<VirtualCard?> CreateCardAsync(Guid organizationId, Guid ownerMembershipId, string cardholderName, string? nickname = null, Guid? departmentId = null)
         {
+            // Verify membership exists and belongs to organization
+            var membership = await _organizationUserRepository.GetByIdAsync(ownerMembershipId);
+            if (membership == null || membership.OrganizationId != organizationId || membership.Status != "Active")
+            {
+                return null;
+            }
+
    var cardNumber = GenerateCardNumber();
     var cvv = GenerateCVV();
    var expiryDate = DateTime.UtcNow.AddYears(4);
 
      var card = new VirtualCard
      {
-   UserId = userId,
+   OrganizationId = organizationId,
+            OwnerMembershipId = ownerMembershipId,
+            UserId = membership.UserId, // Backward compatibility
      CardNumber = cardNumber,
             CVV = cvv,
     ExpiryDate = expiryDate,
  CardholderName = cardholderName,
   Nickname = nickname,
-Status = "ACTIVE",
+Status = "PENDING", // Card starts as PENDING, requires approval
             CardType = "CREDIT",
       Currency = "NGN",
             AllowInternational = true,
@@ -45,7 +63,7 @@ Status = "ACTIVE",
   var created = await _cardRepository.CreateAsync(card);
 
          var ipAddress = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
-        await _auditService.LogActionAsync(userId, "CARD_CREATED", "VirtualCard", created.Id, null, ipAddress, null);
+        await _auditService.LogActionAsync(membership.UserId, "CARD_CREATED", "VirtualCard", created.Id, $"Organization: {organizationId}", ipAddress, null);
 
       return created;
       }
@@ -55,9 +73,16 @@ Status = "ACTIVE",
   return await _cardRepository.GetByIdAsync(cardId);
         }
 
-     public async Task<List<VirtualCard>> GetUserCardsAsync(Guid userId)
+     public async Task<List<VirtualCard>> GetOrganizationCardsAsync(Guid organizationId)
+        {
+            return await _cardRepository.GetByOrganizationIdAsync(organizationId);
+        }
+
+        public async Task<List<VirtualCard>> GetUserCardsAsync(Guid organizationId, Guid userId)
   {
-        return await _cardRepository.GetByUserIdAsync(userId);
+            // Get cards for user within the organization
+            var allOrgCards = await _cardRepository.GetByOrganizationIdAsync(organizationId);
+            return allOrgCards.Where(c => c.OwnerMembership?.UserId == userId || c.UserId == userId).ToList();
         }
 
    public async Task<VirtualCard?> UpdateCardAsync(Guid cardId, string? nickname = null, bool? allowInternational = null)
@@ -75,10 +100,17 @@ var card = await _cardRepository.GetByIdAsync(cardId);
      return await _cardRepository.UpdateAsync(card);
       }
 
-    public async Task<bool> FreezeCardAsync(Guid cardId, string reason)
+    public async Task<bool> FreezeCardAsync(Guid cardId, string reason, Guid requestedByMembershipId)
         {
       var card = await _cardRepository.GetByIdAsync(cardId);
             if (card == null) return false;
+
+            // Verify requester belongs to same organization
+            var membership = await _organizationUserRepository.GetByIdAsync(requestedByMembershipId);
+            if (membership == null || membership.OrganizationId != card.OrganizationId)
+            {
+                return false;
+            }
 
    card.Status = "FROZEN";
       card.FreezeReason = reason;
@@ -89,10 +121,17 @@ var card = await _cardRepository.GetByIdAsync(cardId);
     return true;
         }
 
-        public async Task<bool> UnfreezeCardAsync(Guid cardId)
+        public async Task<bool> UnfreezeCardAsync(Guid cardId, Guid requestedByMembershipId)
         {
    var card = await _cardRepository.GetByIdAsync(cardId);
  if (card == null || card.Status != "FROZEN") return false;
+
+            // Verify requester belongs to same organization
+            var membership = await _organizationUserRepository.GetByIdAsync(requestedByMembershipId);
+            if (membership == null || membership.OrganizationId != card.OrganizationId)
+            {
+                return false;
+            }
 
             card.Status = "ACTIVE";
    card.FreezeReason = null;
@@ -103,18 +142,31 @@ var card = await _cardRepository.GetByIdAsync(cardId);
             return true;
         }
 
-  public async Task<bool> CancelCardAsync(Guid cardId)
+  public async Task<bool> CancelCardAsync(Guid cardId, Guid requestedByMembershipId)
     {
             var card = await _cardRepository.GetByIdAsync(cardId);
      if (card == null) return false;
+
+            // Verify requester belongs to same organization
+            var membership = await _organizationUserRepository.GetByIdAsync(requestedByMembershipId);
+            if (membership == null || membership.OrganizationId != card.OrganizationId)
+            {
+                return false;
+            }
 
         await _cardRepository.DeleteAsync(cardId);
        return true;
         }
 
-        public async Task<(List<VirtualCard> items, int total)> GetUserCardsPaginatedAsync(Guid userId, int pageNumber, int pageSize)
+        public async Task<(List<VirtualCard> items, int total)> GetOrganizationCardsPaginatedAsync(Guid organizationId, int pageNumber, int pageSize)
      {
- return await _cardRepository.GetPaginatedByUserIdAsync(userId, pageNumber, pageSize);
+            var allCards = await _cardRepository.GetByOrganizationIdAsync(organizationId);
+            var total = allCards.Count;
+            var items = allCards
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+            return (items, total);
     }
 
   private string GenerateCardNumber()
@@ -424,19 +476,42 @@ card.CardBalance.ReservedBalance = transactions
     public class ApprovalServiceImpl : IApprovalService
     {
     private readonly IApprovalRepository _approvalRepository;
+        private readonly IOrganizationService _organizationService;
+        private readonly ICardRepository _cardRepository;
+        private readonly IOrganizationUserRepository _organizationUserRepository;
 
-        public ApprovalServiceImpl(IApprovalRepository approvalRepository)
+        public ApprovalServiceImpl(
+            IApprovalRepository approvalRepository,
+            IOrganizationService organizationService,
+            ICardRepository cardRepository,
+            IOrganizationUserRepository organizationUserRepository)
         {
     _approvalRepository = approvalRepository;
+            _organizationService = organizationService;
+            _cardRepository = cardRepository;
+            _organizationUserRepository = organizationUserRepository;
         }
 
-public async Task<CardApproval?> RequestApprovalAsync(Guid cardId, string actionType, Guid requestedBy, string? actionData = null)
+public async Task<CardApproval?> RequestApprovalAsync(Guid cardId, string actionType, Guid requestedByMembershipId, string? actionData = null)
         {
+            // Get card to find organization
+            var card = await _cardRepository.GetByIdAsync(cardId);
+            if (card == null) return null;
+
+            // Get requester membership
+            var requesterMembership = await _organizationUserRepository.GetByIdAsync(requestedByMembershipId);
+            if (requesterMembership == null || requesterMembership.OrganizationId != card.OrganizationId)
+            {
+                return null;
+            }
+
   var approval = new CardApproval
             {
+            OrganizationId = card.OrganizationId,
             CardId = cardId,
        ActionType = actionType,
-      RequestedBy = requestedBy,
+      RequestedByMembershipId = requestedByMembershipId,
+      RequestedBy = requesterMembership.UserId, // Backward compatibility
    Status = "PENDING",
               ActionData = actionData,
   CreatedAt = DateTime.UtcNow,
@@ -446,18 +521,45 @@ public async Task<CardApproval?> RequestApprovalAsync(Guid cardId, string action
     return await _approvalRepository.CreateAsync(approval);
   }
 
-    public async Task<List<CardApproval>> GetPendingApprovalsAsync()
+    public async Task<List<CardApproval>> GetPendingApprovalsAsync(Guid organizationId)
       {
-        return await _approvalRepository.GetPendingAsync();
+            var allPending = await _approvalRepository.GetPendingAsync();
+            return allPending.Where(a => a.OrganizationId == organizationId).ToList();
         }
 
-      public async Task<bool> ApproveAsync(Guid approvalId, Guid userId, string? reason = null)
+      public async Task<bool> ApproveAsync(Guid approvalId, Guid approverMembershipId, string? reason = null)
       {
             var approval = await _approvalRepository.GetByIdAsync(approvalId);
        if (approval == null || approval.Status != "PENDING") return false;
 
+            // Get approver membership
+            var approverMembership = await _organizationUserRepository.GetByIdAsync(approverMembershipId);
+            if (approverMembership == null || approverMembership.OrganizationId != approval.OrganizationId)
+            {
+                return false;
+            }
+
+            // Get requester membership to check role hierarchy
+            var requesterMembership = await _organizationUserRepository.GetByIdAsync(approval.RequestedByMembershipId);
+            if (requesterMembership == null || requesterMembership.OrganizationId != approval.OrganizationId)
+            {
+                return false;
+            }
+
+            // Verify approver has higher or equal role (Owner > Admin > Approver > Viewer)
+            var canApprove = await _organizationService.HasRoleOrHigherAsync(
+                approval.OrganizationId, 
+                approverMembershipId, 
+                requesterMembership.OrgRole);
+            
+            if (!canApprove)
+            {
+                return false; // Approver doesn't have sufficient role
+            }
+
     approval.Status = "APPROVED";
-         approval.ApprovedBy = userId;
+         approval.ApprovedByMembershipId = approverMembershipId;
+         approval.ApprovedBy = approverMembership.UserId; // Backward compatibility
      approval.Reason = reason;
      approval.ResolvedAt = DateTime.UtcNow;
 
@@ -465,13 +567,21 @@ public async Task<CardApproval?> RequestApprovalAsync(Guid cardId, string action
             return true;
         }
 
-     public async Task<bool> RejectAsync(Guid approvalId, Guid userId, string reason)
+     public async Task<bool> RejectAsync(Guid approvalId, Guid approverMembershipId, string reason)
  {
    var approval = await _approvalRepository.GetByIdAsync(approvalId);
             if (approval == null || approval.Status != "PENDING") return false;
 
+            // Get approver membership
+            var approverMembership = await _organizationUserRepository.GetByIdAsync(approverMembershipId);
+            if (approverMembership == null || approverMembership.OrganizationId != approval.OrganizationId)
+            {
+                return false;
+            }
+
      approval.Status = "REJECTED";
-       approval.ApprovedBy = userId;
+       approval.ApprovedByMembershipId = approverMembershipId;
+       approval.ApprovedBy = approverMembership.UserId; // Backward compatibility
             approval.Reason = reason;
     approval.ResolvedAt = DateTime.UtcNow;
 
@@ -868,5 +978,223 @@ _logger.LogError(ex, "Error getting account transactions by date range for user 
          return new List<AccountTransaction>();
             }
  }
+    }
+
+    /// <summary>
+    /// Implementation of organization service.
+    /// </summary>
+    public class OrganizationServiceImpl : IOrganizationService
+    {
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IOrganizationUserRepository _organizationUserRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly ILogger<OrganizationServiceImpl> _logger;
+
+        public OrganizationServiceImpl(
+            IOrganizationRepository organizationRepository,
+            IOrganizationUserRepository organizationUserRepository,
+            IUserRepository userRepository,
+            ILogger<OrganizationServiceImpl> logger)
+        {
+            _organizationRepository = organizationRepository;
+            _organizationUserRepository = organizationUserRepository;
+            _userRepository = userRepository;
+            _logger = logger;
+        }
+
+        public async Task<(Organization organization, OrganizationUser membership)> CreateOrganizationAsync(string name, Guid creatorUserId, string? industry = null)
+        {
+            // Check if organization name already exists
+            var existing = await _organizationRepository.GetByNameAsync(name);
+            if (existing != null)
+            {
+                throw new InvalidOperationException($"Organization with name '{name}' already exists");
+            }
+
+            // Verify creator user exists
+            var creator = await _userRepository.GetByIdAsync(int.Parse(creatorUserId.ToString()));
+            if (creator == null)
+            {
+                throw new InvalidOperationException("Creator user not found");
+            }
+
+            // Create organization
+            var organization = new Organization
+            {
+                Name = name,
+                Industry = industry,
+                Status = "Active",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            organization = await _organizationRepository.CreateAsync(organization);
+
+            // Create membership for creator as Owner
+            var membership = new OrganizationUser
+            {
+                OrganizationId = organization.Id,
+                UserId = creatorUserId,
+                OrgRole = "Owner",
+                Status = "Active",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            membership = await _organizationUserRepository.CreateAsync(membership);
+
+            _logger.LogInformation("Organization {OrgName} created with Owner {UserId}", name, creatorUserId);
+            return (organization, membership);
+        }
+
+        public async Task<Organization?> GetOrganizationAsync(Guid organizationId)
+        {
+            return await _organizationRepository.GetByIdAsync(organizationId);
+        }
+
+        public async Task<OrganizationUser?> AddMemberAsync(Guid organizationId, Guid userId, string role)
+        {
+            // Verify organization exists
+            var organization = await _organizationRepository.GetByIdAsync(organizationId);
+            if (organization == null)
+            {
+                return null;
+            }
+
+            // Verify user exists
+            var user = await _userRepository.GetByIdAsync(int.Parse(userId.ToString()));
+            if (user == null)
+            {
+                return null;
+            }
+
+            // Check if membership already exists
+            var existing = await _organizationUserRepository.GetByOrganizationAndUserAsync(organizationId, userId);
+            if (existing != null)
+            {
+                // Update existing membership
+                existing.OrgRole = role;
+                existing.Status = "Active";
+                existing.UpdatedAt = DateTime.UtcNow;
+                return await _organizationUserRepository.UpdateAsync(existing);
+            }
+
+            // Create new membership
+            var membership = new OrganizationUser
+            {
+                OrganizationId = organizationId,
+                UserId = userId,
+                OrgRole = role,
+                Status = "Active",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            return await _organizationUserRepository.CreateAsync(membership);
+        }
+
+        public async Task<OrganizationUser?> GetMembershipAsync(Guid organizationId, Guid userId)
+        {
+            return await _organizationUserRepository.GetByOrganizationAndUserAsync(organizationId, userId);
+        }
+
+        public async Task<List<OrganizationUser>> GetOrganizationMembersAsync(Guid organizationId)
+        {
+            return await _organizationUserRepository.GetByOrganizationIdAsync(organizationId);
+        }
+
+        public async Task<bool> UpdateMemberRoleAsync(Guid organizationId, Guid userId, string newRole)
+        {
+            var membership = await _organizationUserRepository.GetByOrganizationAndUserAsync(organizationId, userId);
+            if (membership == null)
+            {
+                return false;
+            }
+
+            membership.OrgRole = newRole;
+            membership.UpdatedAt = DateTime.UtcNow;
+            await _organizationUserRepository.UpdateAsync(membership);
+            return true;
+        }
+
+        public async Task<bool> RemoveMemberAsync(Guid organizationId, Guid userId)
+        {
+            var membership = await _organizationUserRepository.GetByOrganizationAndUserAsync(organizationId, userId);
+            if (membership == null)
+            {
+                return false;
+            }
+
+            membership.Status = "Inactive";
+            membership.UpdatedAt = DateTime.UtcNow;
+            await _organizationUserRepository.UpdateAsync(membership);
+            return true;
+        }
+
+        public async Task<List<Organization>> GetUserOrganizationsAsync(Guid userId)
+        {
+            var memberships = await _organizationUserRepository.GetByUserIdAsync(userId);
+            var organizationIds = memberships.Select(m => m.OrganizationId).ToList();
+            
+            var organizations = new List<Organization>();
+            foreach (var orgId in organizationIds)
+            {
+                var org = await _organizationRepository.GetByIdAsync(orgId);
+                if (org != null)
+                {
+                    organizations.Add(org);
+                }
+            }
+            return organizations;
+        }
+
+        public async Task<bool> HasRoleAsync(Guid organizationId, Guid userId, string role)
+        {
+            var membership = await _organizationUserRepository.GetByOrganizationAndUserAsync(organizationId, userId);
+            return membership != null && membership.OrgRole == role && membership.Status == "Active";
+        }
+
+        public async Task<bool> HasRoleOrHigherAsync(Guid organizationId, Guid userId, string requiredRole)
+        {
+            var membership = await _organizationUserRepository.GetByOrganizationAndUserAsync(organizationId, userId);
+            if (membership == null || membership.Status != "Active")
+            {
+                return false;
+            }
+
+            // Role hierarchy: Owner > Admin > Approver > Viewer > Auditor
+            var roleHierarchy = new Dictionary<string, int>
+            {
+                { "Owner", 5 },
+                { "Admin", 4 },
+                { "Approver", 3 },
+                { "Viewer", 2 },
+                { "Auditor", 1 }
+            };
+
+            var userRoleLevel = roleHierarchy.GetValueOrDefault(membership.OrgRole, 0);
+            var requiredRoleLevel = roleHierarchy.GetValueOrDefault(requiredRole, 0);
+
+            return userRoleLevel >= requiredRoleLevel;
+        }
+
+        public async Task<List<OrganizationUser>> GetApproversAsync(Guid organizationId)
+        {
+            var approvers = new List<OrganizationUser>();
+            
+            // Get Owners
+            var owners = await _organizationUserRepository.GetByOrganizationAndRoleAsync(organizationId, "Owner");
+            approvers.AddRange(owners);
+
+            // Get Admins
+            var admins = await _organizationUserRepository.GetByOrganizationAndRoleAsync(organizationId, "Admin");
+            approvers.AddRange(admins);
+
+            // Get Approvers
+            var approverRole = await _organizationUserRepository.GetByOrganizationAndRoleAsync(organizationId, "Approver");
+            approvers.AddRange(approverRole);
+
+            return approvers.Where(a => a.Status == "Active").ToList();
+        }
     }
 }

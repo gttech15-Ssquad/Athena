@@ -60,7 +60,7 @@ namespace virtupay_corporate.Controllers
       return Ok(new AccountBalanceResponse
        {
          Id = balance.Id,
-UserId = balance.UserId,
+UserId = balance.UserId ?? Guid.Empty,
   AvailableBalance = balance.AvailableBalance,
  TotalFunded = balance.TotalFunded,
                     TotalWithdrawn = balance.TotalWithdrawn,
@@ -164,7 +164,7 @@ UserId = balance.UserId,
      return Ok(new AccountBalanceResponse
       {
         Id = balance.Id,
-         UserId = balance.UserId,
+         UserId = balance.UserId ?? Guid.Empty,
       AvailableBalance = balance.AvailableBalance,
         TotalFunded = balance.TotalFunded,
  TotalWithdrawn = balance.TotalWithdrawn,

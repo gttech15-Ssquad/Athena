@@ -58,7 +58,11 @@ namespace virtupay_corporate.Controllers
       if (!userId.HasValue)
     return Unauthorized();
 
-    var approval = await _approvalService.RequestApprovalAsync(cardId, request.ActionType, userId.Value, request.ActionData);
+            var (organizationId, membershipId) = GetOrganizationContext();
+            if (!membershipId.HasValue)
+                return Unauthorized();
+
+            var approval = await _approvalService.RequestApprovalAsync(cardId, request.ActionType, membershipId.Value, request.ActionData);
 
   if (approval == null)
           return BadRequest(new ErrorResponse { Code = "APPROVAL_REQUEST_FAILED", Message = "Failed to request approval" });
@@ -88,7 +92,11 @@ namespace virtupay_corporate.Controllers
      {
     try
   {
-        var approvals = await _approvalService.GetPendingApprovalsAsync();
+            var (organizationId, membershipId) = GetOrganizationContext();
+            if (!organizationId.HasValue)
+                return Unauthorized();
+
+            var approvals = await _approvalService.GetPendingApprovalsAsync(organizationId.Value);
      var response = approvals.Select(MapApprovalToResponse).ToList();
     return Ok(response);
         }
@@ -114,7 +122,11 @@ namespace virtupay_corporate.Controllers
  {
   try
  {
-      var approvals = await _approvalService.GetPendingApprovalsAsync();
+            var (organizationId, membershipId) = GetOrganizationContext();
+            if (!organizationId.HasValue)
+                return Unauthorized();
+
+            var approvals = await _approvalService.GetPendingApprovalsAsync(organizationId.Value);
    var approval = approvals.FirstOrDefault(a => a.Id == approvalId);
 
      if (approval == null)
@@ -151,7 +163,11 @@ namespace virtupay_corporate.Controllers
 if (!userId.HasValue)
 return Unauthorized();
 
-      var result = await _approvalService.ApproveAsync(approvalId, userId.Value, request.Comment);
+            var (organizationId, membershipId) = GetOrganizationContext();
+            if (!membershipId.HasValue)
+                return Unauthorized();
+
+            var result = await _approvalService.ApproveAsync(approvalId, membershipId.Value, request.Comment);
      if (!result)
       return NotFound(new ErrorResponse { Code = "APPROVAL_NOT_FOUND", Message = "Approval not found" });
 
@@ -187,7 +203,11 @@ return Unauthorized();
       if (!userId.HasValue)
   return Unauthorized();
 
-   var result = await _approvalService.RejectAsync(approvalId, userId.Value, request.Reason);
+            var (organizationId, membershipId) = GetOrganizationContext();
+            if (!membershipId.HasValue)
+                return Unauthorized();
+
+            var result = await _approvalService.RejectAsync(approvalId, membershipId.Value, request.Reason);
        if (!result)
    return NotFound(new ErrorResponse { Code = "APPROVAL_NOT_FOUND", Message = "Approval not found" });
 
@@ -324,6 +344,20 @@ _logger.LogError(ex, "Error getting approval requirements");
     {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
      return userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId) ? userId : null;
+        }
+
+        /// <summary>
+        /// Gets organization context from JWT claims.
+        /// </summary>
+        private (Guid? organizationId, Guid? membershipId) GetOrganizationContext()
+        {
+            var orgIdClaim = User.FindFirst("orgId");
+            var membershipIdClaim = User.FindFirst("membershipId");
+            
+            Guid? orgId = orgIdClaim != null && Guid.TryParse(orgIdClaim.Value, out var oid) ? oid : null;
+            Guid? membershipId = membershipIdClaim != null && Guid.TryParse(membershipIdClaim.Value, out var mid) ? mid : null;
+            
+            return (orgId, membershipId);
         }
     }
 }

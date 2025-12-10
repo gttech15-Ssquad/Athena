@@ -8,14 +8,15 @@ namespace virtupay_corporate.Services
    public interface IAuthService
     {
       /// <summary>
-   /// Registers a new user.
+   /// Registers a new user and creates an organization.
  /// </summary>
-      Task<User?> RegisterAsync(string email, string password, string role, string? firstName = null, string? lastName = null, int? departmentId = null);
+      Task<(User user, Organization organization, OrganizationUser membership)?> RegisterAsync(string email, string password, string role, string organizationName, string? firstName = null, string? lastName = null, string? industry = null);
 
    /// <summary>
-        /// Authenticates a user and returns a JWT token.
+        /// Authenticates a user and returns a JWT token with organization context.
+        /// Uses the first active organization membership if user belongs to multiple orgs.
         /// </summary>
- Task<string?> LoginAsync(string email, string password);
+ Task<(string token, Guid? organizationId, Guid? membershipId, string? orgRole)?> LoginAsync(string email, string password);
 
   /// <summary>
         /// Verifies if a user exists.
@@ -43,15 +44,15 @@ Task<bool> SuspendUserAsync(int userId);
         Task<bool> ReactivateUserAsync(int userId);
     }
 
- /// <summary>
+    /// <summary>
     /// Interface for card service.
     /// </summary>
     public interface ICardService
     {
         /// <summary>
-   /// Creates a new virtual card.
+   /// Creates a new virtual card within an organization. Requires approval if user role is below Approver.
         /// </summary>
-        Task<VirtualCard?> CreateCardAsync(Guid userId, string cardholderName, string? nickname = null, Guid? departmentId = null);
+        Task<VirtualCard?> CreateCardAsync(Guid organizationId, Guid ownerMembershipId, string cardholderName, string? nickname = null, Guid? departmentId = null);
 
         /// <summary>
  /// Gets card details.
@@ -59,9 +60,14 @@ Task<bool> SuspendUserAsync(int userId);
         Task<VirtualCard?> GetCardAsync(Guid cardId);
 
       /// <summary>
-      /// Gets all cards for a user.
+      /// Gets all cards for an organization.
         /// </summary>
- Task<List<VirtualCard>> GetUserCardsAsync(Guid userId);
+ Task<List<VirtualCard>> GetOrganizationCardsAsync(Guid organizationId);
+
+        /// <summary>
+        /// Gets all cards for a user within an organization.
+        /// </summary>
+        Task<List<VirtualCard>> GetUserCardsAsync(Guid organizationId, Guid userId);
 
         /// <summary>
         /// Updates card details.
@@ -69,24 +75,24 @@ Task<bool> SuspendUserAsync(int userId);
         Task<VirtualCard?> UpdateCardAsync(Guid cardId, string? nickname = null, bool? allowInternational = null);
 
    /// <summary>
-        /// Freezes a card.
+        /// Freezes a card. Requires approval if user role is below Approver.
    /// </summary>
-     Task<bool> FreezeCardAsync(Guid cardId, string reason);
+     Task<bool> FreezeCardAsync(Guid cardId, string reason, Guid requestedByMembershipId);
 
     /// <summary>
-  /// Unfreezes a card.
+  /// Unfreezes a card. Requires approval if user role is below Approver.
         /// </summary>
-        Task<bool> UnfreezeCardAsync(Guid cardId);
+        Task<bool> UnfreezeCardAsync(Guid cardId, Guid requestedByMembershipId);
 
  /// <summary>
-     /// Cancels a card.
+     /// Cancels a card. Requires approval.
    /// </summary>
- Task<bool> CancelCardAsync(Guid cardId);
+ Task<bool> CancelCardAsync(Guid cardId, Guid requestedByMembershipId);
 
         /// <summary>
-     /// Gets card with pagination.
+     /// Gets cards with pagination for an organization.
    /// </summary>
-        Task<(List<VirtualCard> items, int total)> GetUserCardsPaginatedAsync(Guid userId, int pageNumber, int pageSize);
+        Task<(List<VirtualCard> items, int total)> GetOrganizationCardsPaginatedAsync(Guid organizationId, int pageNumber, int pageSize);
     }
 
     /// <summary>
@@ -208,24 +214,24 @@ Task<bool> SuspendUserAsync(int userId);
     public interface IApprovalService
     {
  /// <summary>
-     /// Requests approval for a high-risk action.
+     /// Requests approval for a high-risk action within an organization.
    /// </summary>
-        Task<CardApproval?> RequestApprovalAsync(Guid cardId, string actionType, Guid requestedBy, string? actionData = null);
+        Task<CardApproval?> RequestApprovalAsync(Guid cardId, string actionType, Guid requestedByMembershipId, string? actionData = null);
 
         /// <summary>
-     /// Gets pending approvals.
+     /// Gets pending approvals for an organization.
         /// </summary>
- Task<List<CardApproval>> GetPendingApprovalsAsync();
+ Task<List<CardApproval>> GetPendingApprovalsAsync(Guid organizationId);
 
 /// <summary>
-  /// Approves a request.
+  /// Approves a request. Verifies approver has higher role than requester in same organization.
         /// </summary>
-        Task<bool> ApproveAsync(Guid approvalId, Guid userId, string? reason = null);
+        Task<bool> ApproveAsync(Guid approvalId, Guid approverMembershipId, string? reason = null);
 
         /// <summary>
- /// Rejects a request.
+ /// Rejects a request. Verifies approver belongs to same organization.
         /// </summary>
-        Task<bool> RejectAsync(Guid approvalId, Guid userId, string reason);
+        Task<bool> RejectAsync(Guid approvalId, Guid approverMembershipId, string reason);
 
         /// <summary>
     /// Gets approval history for a card.
@@ -340,5 +346,66 @@ Task SendNotificationAsync(Guid userId, string title, string message, string typ
  /// Gets transactions by date range.
         /// </summary>
      Task<List<AccountTransaction>> GetTransactionsByDateRangeAsync(Guid userId, DateTime startDate, DateTime endDate);
+    }
+
+    /// <summary>
+    /// Interface for organization service.
+    /// </summary>
+    public interface IOrganizationService
+    {
+        /// <summary>
+        /// Creates a new organization with the creator as Owner.
+        /// </summary>
+        Task<(Organization organization, OrganizationUser membership)> CreateOrganizationAsync(string name, Guid creatorUserId, string? industry = null);
+
+        /// <summary>
+        /// Gets an organization by ID.
+        /// </summary>
+        Task<Organization?> GetOrganizationAsync(Guid organizationId);
+
+        /// <summary>
+        /// Adds a user to an organization with a specific role.
+        /// </summary>
+        Task<OrganizationUser?> AddMemberAsync(Guid organizationId, Guid userId, string role);
+
+        /// <summary>
+        /// Gets a user's membership in an organization.
+        /// </summary>
+        Task<OrganizationUser?> GetMembershipAsync(Guid organizationId, Guid userId);
+
+        /// <summary>
+        /// Gets all members of an organization.
+        /// </summary>
+        Task<List<OrganizationUser>> GetOrganizationMembersAsync(Guid organizationId);
+
+        /// <summary>
+        /// Updates a member's role in an organization.
+        /// </summary>
+        Task<bool> UpdateMemberRoleAsync(Guid organizationId, Guid userId, string newRole);
+
+        /// <summary>
+        /// Removes a member from an organization.
+        /// </summary>
+        Task<bool> RemoveMemberAsync(Guid organizationId, Guid userId);
+
+        /// <summary>
+        /// Gets all organizations a user belongs to.
+        /// </summary>
+        Task<List<Organization>> GetUserOrganizationsAsync(Guid userId);
+
+        /// <summary>
+        /// Checks if a user has a specific role in an organization.
+        /// </summary>
+        Task<bool> HasRoleAsync(Guid organizationId, Guid userId, string role);
+
+        /// <summary>
+        /// Checks if a user has a role equal to or higher than the specified role.
+        /// </summary>
+        Task<bool> HasRoleOrHigherAsync(Guid organizationId, Guid userId, string requiredRole);
+
+        /// <summary>
+        /// Gets approvers for an organization (Admin, Approver, Owner roles).
+        /// </summary>
+        Task<List<OrganizationUser>> GetApproversAsync(Guid organizationId);
     }
 }

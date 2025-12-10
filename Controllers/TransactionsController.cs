@@ -278,8 +278,10 @@ if (!success)
 if (!result)
          return NotFound(new ErrorResponse { Code = "TRANSACTION_NOT_FOUND", Message = "Transaction not found" });
 
+       // Get the card owner's user ID from the membership
+       var cardOwnerUserId = card.OwnerMembership?.UserId ?? card.UserId ?? Guid.Empty;
        var (success, error) = await _accountBalanceService.WithdrawFromAccountAsync(
-           card.UserId,
+           cardOwnerUserId,
       -transaction.Amount,
     $"Transaction reversal: {request.Reason}",
      transaction.CardId,

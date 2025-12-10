@@ -224,6 +224,8 @@ return await _context.VirtualCards
       .Include(c => c.CardLimits)
      .Include(c => c.MerchantRestrictions)
  .Include(c => c.CardBalance)
+ .Include(c => c.OwnerMembership)
+ .ThenInclude(m => m.User)
   .FirstOrDefaultAsync(c => c.Id == id);
       }
 
@@ -239,7 +241,18 @@ return await _context.VirtualCards
  return await _context.VirtualCards
        .Where(c => !c.IsDeleted && c.UserId == userId)
          .Include(c => c.CardBalance)
+         .Include(c => c.OwnerMembership)
          .ToListAsync();
+        }
+
+        public async Task<List<VirtualCard>> GetByOrganizationIdAsync(Guid organizationId)
+        {
+            return await _context.VirtualCards
+                .Where(c => !c.IsDeleted && c.OrganizationId == organizationId)
+                .Include(c => c.CardBalance)
+                .Include(c => c.OwnerMembership)
+                .ThenInclude(m => m.User)
+                .ToListAsync();
         }
 
   public async Task<List<VirtualCard>> GetAllAsync()
@@ -247,6 +260,7 @@ return await _context.VirtualCards
  return await _context.VirtualCards
       .Where(c => !c.IsDeleted)
      .Include(c => c.CardBalance)
+       .Include(c => c.OwnerMembership)
        .ToListAsync();
       }
 
@@ -498,5 +512,134 @@ var query = _context.CardTransactions.Where(t => t.CardId == cardId);
         .OrderByDescending(a => a.Timestamp)
           .ToListAsync();
    }
+    }
+
+    /// <summary>
+    /// Repository implementation for Organization operations.
+    /// </summary>
+    public class OrganizationRepository : IOrganizationRepository
+    {
+        private readonly CorporateDbContext _context;
+
+        public OrganizationRepository(CorporateDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<Organization?> GetByIdAsync(Guid id)
+        {
+            return await _context.Organizations
+                .Include(o => o.Members)
+                .ThenInclude(m => m.User)
+                .Include(o => o.Departments)
+                .FirstOrDefaultAsync(o => o.Id == id);
+        }
+
+        public async Task<Organization?> GetByNameAsync(string name)
+        {
+            return await _context.Organizations
+                .FirstOrDefaultAsync(o => o.Name == name);
+        }
+
+        public async Task<List<Organization>> GetAllAsync()
+        {
+            return await _context.Organizations
+                .Where(o => o.Status == "Active")
+                .ToListAsync();
+        }
+
+        public async Task<Organization> CreateAsync(Organization organization)
+        {
+            _context.Organizations.Add(organization);
+            await _context.SaveChangesAsync();
+            return organization;
+        }
+
+        public async Task<Organization> UpdateAsync(Organization organization)
+        {
+            _context.Organizations.Update(organization);
+            await _context.SaveChangesAsync();
+            return organization;
+        }
+
+        public async Task<(List<Organization> items, int total)> GetPaginatedAsync(int pageNumber, int pageSize)
+        {
+            var query = _context.Organizations.Where(o => o.Status == "Active");
+            var total = await query.CountAsync();
+
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);
+        }
+    }
+
+    /// <summary>
+    /// Repository implementation for OrganizationUser operations.
+    /// </summary>
+    public class OrganizationUserRepository : IOrganizationUserRepository
+    {
+        private readonly CorporateDbContext _context;
+
+        public OrganizationUserRepository(CorporateDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<OrganizationUser?> GetByIdAsync(Guid id)
+        {
+            return await _context.OrganizationUsers
+                .Include(m => m.Organization)
+                .Include(m => m.User)
+                .FirstOrDefaultAsync(m => m.Id == id);
+        }
+
+        public async Task<OrganizationUser?> GetByOrganizationAndUserAsync(Guid organizationId, Guid userId)
+        {
+            return await _context.OrganizationUsers
+                .Include(m => m.Organization)
+                .Include(m => m.User)
+                .FirstOrDefaultAsync(m => m.OrganizationId == organizationId && m.UserId == userId && m.Status == "Active");
+        }
+
+        public async Task<List<OrganizationUser>> GetByOrganizationIdAsync(Guid organizationId)
+        {
+            return await _context.OrganizationUsers
+                .Include(m => m.User)
+                .Where(m => m.OrganizationId == organizationId && m.Status == "Active")
+                .ToListAsync();
+        }
+
+        public async Task<List<OrganizationUser>> GetByUserIdAsync(Guid userId)
+        {
+            return await _context.OrganizationUsers
+                .Include(m => m.Organization)
+                .Where(m => m.UserId == userId && m.Status == "Active")
+                .ToListAsync();
+        }
+
+        public async Task<OrganizationUser> CreateAsync(OrganizationUser membership)
+        {
+            _context.OrganizationUsers.Add(membership);
+            await _context.SaveChangesAsync();
+            return membership;
+        }
+
+        public async Task<OrganizationUser> UpdateAsync(OrganizationUser membership)
+        {
+            _context.OrganizationUsers.Update(membership);
+            await _context.SaveChangesAsync();
+            return membership;
+        }
+
+        public async Task<List<OrganizationUser>> GetByOrganizationAndRoleAsync(Guid organizationId, string role)
+        {
+            return await _context.OrganizationUsers
+                .Include(m => m.User)
+                .Where(m => m.OrganizationId == organizationId && m.OrgRole == role && m.Status == "Active")
+                .ToListAsync();
+        }
     }
 }

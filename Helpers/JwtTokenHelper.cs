@@ -13,7 +13,7 @@ namespace virtupay_corporate.Helpers
         /// <summary>
         /// Generates a JWT token for a user.
         /// </summary>
-        string GenerateToken(Guid userId, string email, string role);
+        string GenerateToken(Guid userId, string email, string role, Guid? organizationId = null, Guid? membershipId = null);
 
         /// <summary>
         /// Validates and retrieves claims from a token.
@@ -48,22 +48,29 @@ public class JwtTokenHelper : IJwtTokenHelper
      _audience = audience;
         }
 
-        public string GenerateToken(Guid userId, string email, string role)
+        public string GenerateToken(Guid userId, string email, string role, Guid? organizationId = null, Guid? membershipId = null)
         {
    var key = Encoding.ASCII.GetBytes(_secret);
-    var tokenDescriptor = new SecurityTokenDescriptor
-    {
-  Subject = new ClaimsIdentity(new[]
-       {
-     new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-        new Claim(ClaimTypes.Email, email),
-  new Claim(ClaimTypes.Role, role)
-    }),
-      Expires = DateTime.UtcNow.AddMinutes(_expirationMinutes),
-   Issuer = _issuer,
-           Audience = _audience,
-     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-  };
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.Email, email),
+                new Claim(ClaimTypes.Role, role)
+            };
+
+            if (organizationId.HasValue)
+                claims.Add(new Claim("orgId", organizationId.Value.ToString()));
+            if (membershipId.HasValue)
+                claims.Add(new Claim("membershipId", membershipId.Value.ToString()));
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(_expirationMinutes),
+                Issuer = _issuer,
+                Audience = _audience,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
 
       var tokenHandler = new JwtSecurityTokenHandler();
   var token = tokenHandler.CreateToken(tokenDescriptor);

@@ -1,25 +1,26 @@
 namespace virtupay_corporate.Models
 {
     /// <summary>
-/// Represents the main account balance for a user.
-    /// This is the master account from which virtual cards are funded.
+    /// Represents an organization or user balance. OrganizationId is required; user membership is optional.
     /// </summary>
     public class AccountBalance
- {
+    {
         /// <summary>
         /// Gets or sets the unique identifier.
     /// </summary>
         public Guid Id { get; set; } = Guid.NewGuid();
 
-      /// <summary>
-   /// Gets or sets the user ID (account owner).
-    /// </summary>
-        public Guid UserId { get; set; }
+        public Guid OrganizationId { get; set; }
+        public Organization? Organization { get; set; }
 
-  /// <summary>
-   /// Gets or sets the user navigation property.
-  /// </summary>
+        /// <summary>
+        /// Optional user-specific balance (legacy/personal). Prefer OrganizationUser for org scope.
+        /// </summary>
+        public Guid? UserId { get; set; }
         public User? User { get; set; }
+
+        public Guid? OrganizationUserId { get; set; }
+        public OrganizationUser? OrganizationUser { get; set; }
 
       /// <summary>
      /// Gets or sets the current available balance.
