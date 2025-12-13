@@ -65,12 +65,12 @@ private readonly CorporateDbContext _context;
  _context = context;
         }
 
-        public async Task<User?> GetByIdAsync(int id)
- {
- return await _context.Users
-    .Where(u => !u.IsDeleted)
-     .FirstOrDefaultAsync();
-   }
+        public async Task<User?> GetByIdAsync(Guid id)
+        {
+        return await _context.Users
+            .Where(u => !u.IsDeleted && u.Id == id)
+            .FirstOrDefaultAsync();
+        }
 
  public async Task<User?> GetByEmailAsync(string email)
         {
@@ -116,7 +116,7 @@ private readonly CorporateDbContext _context;
      return user;
       }
 
-  public async Task<bool> DeleteAsync(int id)
+  public async Task<bool> DeleteAsync(Guid id)
         {
  var user = await GetByIdAsync(id);
   if (user == null) return false;

@@ -42,7 +42,7 @@ namespace virtupay_corporate.Repositories
         /// <summary>
         /// Gets a user by ID.
         /// </summary>
-        Task<User?> GetByIdAsync(int id);
+        Task<User?> GetByIdAsync(Guid id);
 
         /// <summary>
     /// Gets a user by email.
@@ -72,7 +72,7 @@ namespace virtupay_corporate.Repositories
         /// <summary>
         /// Deletes a user (soft delete).
         /// </summary>
-      Task<bool> DeleteAsync(int id);
+      Task<bool> DeleteAsync(Guid id);
 
         /// <summary>
         /// Gets paginated list of users.

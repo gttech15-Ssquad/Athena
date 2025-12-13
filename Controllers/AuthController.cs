@@ -164,14 +164,26 @@ Code = "INVALID_CREDENTIALS",
            }
 
       var (token, organizationId, membershipId, orgRole) = loginResult.Value;
-      var user = await _authService.GetUserAsync(int.Parse(_jwtTokenHelper.ExtractUserId(token)?.ToString() ?? "0"));
+      var userIdString = _jwtTokenHelper.ExtractUserId(token)?.ToString();
+      if (!Guid.TryParse(userIdString, out var userId))
+      {
+        return Unauthorized(new ErrorResponse
+        {
+          Code = "INVALID_USER_ID",
+          Message = "Invalid user ID in token"
+        });
+      }
+
+      var user = await _authService.GetUserAsync(userId);
 
       if (user == null)
-     return Unauthorized(new ErrorResponse
-          {
-        Code = "USER_NOT_FOUND",
-           Message = "User not found"
-      });
+      {
+        return Unauthorized(new ErrorResponse
+        {
+          Code = "USER_NOT_FOUND",
+          Message = "User not found"
+        });
+      }
 
        var response = new AuthResponse
       {
@@ -233,7 +245,7 @@ Code = "INVALID_CREDENTIALS",
          });
 
             var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-    if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+    if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
   return Unauthorized();
 
    var result = await _authService.ChangePasswordAsync(userId, request.OldPassword, request.NewPassword);
@@ -276,7 +288,7 @@ Code = "PASSWORD_CHANGE_FAILED",
      try
     {
             var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-  if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+  if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
       return Unauthorized();
 
  var user = await _authService.GetUserAsync(userId);

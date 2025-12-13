@@ -26,22 +26,21 @@ namespace virtupay_corporate.Services
   /// <summary>
       /// Gets user details.
   /// </summary>
-  Task<User?> GetUserAsync(int userId);
+  Task<User?> GetUserAsync(Guid userId);
 
         /// <summary>
         /// Changes a user's password.
         /// </summary>
-    Task<bool> ChangePasswordAsync(int userId, string oldPassword, string newPassword);
+    Task<bool> ChangePasswordAsync(Guid userId, string oldPassword, string newPassword);
+        /// <summary>
+        /// Suspends a user account.
+        /// </summary>
+Task<bool> SuspendUserAsync(Guid userId);
 
-    /// <summary>
-   /// Suspends a user account.
- /// </summary>
-Task<bool> SuspendUserAsync(int userId);
-
-  /// <summary>
-        /// Reactivates a user account.
-/// </summary>
-        Task<bool> ReactivateUserAsync(int userId);
+        /// <summary>
+        /// Reactivates a suspended user account.
+        /// </summary>
+        Task<bool> ReactivateUserAsync(Guid userId);
     }
 
     /// <summary>

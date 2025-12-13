@@ -55,9 +55,9 @@ _cardService = cardService;
         {
      try
       {
-    // Check if user has Approver role
+    // Check if user has Approver or Owner role
      var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-     if (userRole != "APP")
+     if (userRole != "APP" && userRole != "Owner")
   {
     _logger.LogWarning("Unauthorized card creation attempt by user with role: {Role}", userRole);
     return Forbid();
@@ -303,9 +303,9 @@ if (userRole != "APP")
       {
          try
   {
-  // Check if user has Approver role
+  // Check if user has Approver or Owner role
  var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-  if (userRole != "APP")
+  if (userRole != "APP" && userRole != "Owner")
    {
     _logger.LogWarning("Unauthorized unfreeze attempt by user with role: {Role}", userRole);
    return Forbid();
@@ -345,9 +345,9 @@ _logger.LogError(ex, "Error unfreezing card");
         {
      try
    {
-  // Check if user has Approver role
+  // Check if user has Approver or Owner role
   var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-             if (userRole != "APP")
+             if (userRole != "APP" && userRole != "Owner")
          {
     _logger.LogWarning("Unauthorized delete attempt by user with role: {Role}", userRole);
     return Forbid();

@@ -52,7 +52,7 @@ _httpContextAccessor = httpContextAccessor;
     ExpiryDate = expiryDate,
  CardholderName = cardholderName,
   Nickname = nickname,
-Status = "PENDING", // Card starts as PENDING, requires approval
+Status = "Active", // Card is immediately active for owner-created cards
             CardType = "CREDIT",
       Currency = "NGN",
             AllowInternational = true,
@@ -202,6 +202,7 @@ var card = await _cardRepository.GetByIdAsync(cardId);
 
    var limit = new CardLimit
    {
+    Id = Guid.NewGuid(),
     CardId = cardId,
            LimitType = limitType,
     Amount = amount,
@@ -1012,7 +1013,7 @@ _logger.LogError(ex, "Error getting account transactions by date range for user 
             }
 
             // Verify creator user exists
-            var creator = await _userRepository.GetByIdAsync(int.Parse(creatorUserId.ToString()));
+            var creator = await _userRepository.GetByIdAsync(creatorUserId);
             if (creator == null)
             {
                 throw new InvalidOperationException("Creator user not found");
@@ -1062,7 +1063,7 @@ _logger.LogError(ex, "Error getting account transactions by date range for user 
             }
 
             // Verify user exists
-            var user = await _userRepository.GetByIdAsync(int.Parse(userId.ToString()));
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
                 return null;

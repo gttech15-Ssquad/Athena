@@ -141,12 +141,12 @@ TotalWithdrawn = 0,
    return await _userRepository.GetByEmailAsync(email) != null;
         }
 
-        public async Task<User?> GetUserAsync(int userId)
+        public async Task<User?> GetUserAsync(Guid userId)
         {
         return await _userRepository.GetByIdAsync(userId);
     }
 
-  public async Task<bool> ChangePasswordAsync(int userId, string oldPassword, string newPassword)
+  public async Task<bool> ChangePasswordAsync(Guid userId, string oldPassword, string newPassword)
         {
         var user = await _userRepository.GetByIdAsync(userId);
             if (user == null || !_passwordHasher.Verify(oldPassword, user.PasswordHash))
@@ -161,7 +161,7 @@ return false;
     return true;
         }
 
-   public async Task<bool> SuspendUserAsync(int userId)
+   public async Task<bool> SuspendUserAsync(Guid userId)
         {
 var user = await _userRepository.GetByIdAsync(userId);
     if (user == null) return false;
@@ -175,7 +175,7 @@ var user = await _userRepository.GetByIdAsync(userId);
             return true;
   }
 
-        public async Task<bool> ReactivateUserAsync(int userId)
+        public async Task<bool> ReactivateUserAsync(Guid userId)
         {
   var user = await _userRepository.GetByIdAsync(userId);
        if (user == null) return false;
